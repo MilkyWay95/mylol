@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>SkillUncapped Player</title>
+        <style>
+            /* Стили остаются такими же */
+            .container { display: flex; max-width: 1400px; margin: 0 auto; padding: 20px; }
+            .video-container { flex: 2; min-width: 0; }
+            .tutorial-container { flex: 1; margin-left: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px; }
+            select, input { padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
+            button { padding: 8px 15px; margin: 5px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+            button:hover { background: #45a049; }
+            button:disabled { background: #cccccc; cursor: not-allowed; }
+            #video { width: 100%; max-width: 1280px; background: #000; margin-top: 15px; }
+            #status { color: #666; font-size: 14px; margin-top: 10px; }
+            #downloadBtn { background: #2196F3; }
+            #downloadBtn:hover { background: #0b7dda; }
+            .progress-container { width: 100%; background-color: #ddd; margin-top: 10px; border-radius: 4px; display: none; }
+            #downloadProgress { width: 0; height: 20px; background-color: #4CAF50; border-radius: 4px; text-align: center; line-height: 20px; color: white; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <!-- HTML-структура остается такой же -->
+            <div class="video-container">
+                <label>Playlist: </label>
+                <select id="playlist" onchange="updateUrls()">
+                    <option value="">Select A Playlist</option>
+                    <!-- Все плейлисты будут добавлены через JavaScript -->
+                </select>
+                <br>
+                <label>Video: </label>
+                <select id="url" style="width: 300px;">
+                    <option value="">Select A Video Above</option>
+                </select>
+                <br>
+                <label>Or enter URL: </label>
+                <input type="text" id="customUrl" style="width: 300px;" placeholder="https://www.skill-capped.com/...">
+                <br>
+                <button onclick="stream()">Stream</button>
+                <button onclick="prevUrl()">Back</button>
+                <button id="nextButton" onclick="nextUrl()">Next</button>
+                <button id="downloadBtn" onclick="downloadVideo()" style="display: none;">Download Video</button>
+                
+                <div class="progress-container" id="progressContainer">
+                    <div id="downloadProgress">0%</div>
+                </div>
+                
+                <label id="status"></label>
+                <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+                <video id="video" controls autoplay crossorigin="anonymous"></video>
+            </div>
+            <div class="tutorial-container">
+                <h2>How to Use</h2>
+                <ol>
+                    <li>Select a playlist from the dropdown menu</li>
+                    <li>Choose a video from the second dropdown</li>
+                    <li>Or paste a Skill-Capped URL in the text field</li>
+                    <li>Click "Stream" to start playing</li>
+                    <li>Use "Back" and "Next" to navigate</li>
+                    <li>Click "Download Video" to save it</li>
+                </ol>
+                <p><strong>Note:</strong> You may need a CORS extension for this to work properly.</p>
+                <p>
+                    <a href="https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf" target="_blank">Chrome CORS Extension</a> | 
+                    <a href="https://addons.mozilla.org/de/firefox/addon/access-control-allow-origin" target="_blank">Firefox CORS Extension</a>
+                </p>
+            </div>
+        </div>
+
+        <script>
+            // Полные данные всех плейлистов
+            const playlists = {
+                playlist1: {
+                    name: "Become An Aim God!(10.02)",
+                    videos: [
+                        { name: "Finding Your Sensitivity", url: "https://www.skill-capped.com/valorant/browse/course/pmzfv50ps7" },
+                        { name: "How To Make Aiming Easier", url: "https://www.skill-capped.com/valorant/browse/course/wck5mkm206" },
+                        // ... все остальные видео из плейлиста 1
+                    ]
+                },
+                playlist2: {
+                    name: "Master Calm Aim(10.2)",
+                    videos: [
+                        { name: "What Is Calm Aim?", url: "https://www.skill-capped.com/valorant/browse/course/k3fpn92dh9" },
+                        { name: "What is Tension Management?", url: "https://www.skill-capped.com/valorant/browse/course/vxyd5xqqg9" },
+                        // ... все остальные видео из плейлиста 2
+                    ]
+                },
+                // ... все остальные плейлисты (playlist3 до playlist47)
+                playlist47: {
+                    name: "Sensitivity",
+                    videos: [
+                        { name: "Skilltest #1", url: "https://www.skill-capped.com/valorant/browse/course/tztrfgf4t5" },
+                        { name: "Skilltest #2", url: "https://www.skill-capped.com/valorant/browse/course/tyhhhfc7z1" },
+                        // ... остальные видео
+                    ]
+                }
+            };
+
+            // Инициализация плейлистов при загрузке страницы
+            function initPlaylists() {
+                const playlistSelect = document.getElementById("playlist");
+                
+                // Очищаем существующие опции
+                playlistSelect.innerHTML = '<option value="">Select A Playlist</option>';
+                
+                // Добавляем все плейлисты в выпадающий список
+                for (const playlistId in playlists) {
+                    const playlist = playlists[playlistId];
+                    const option = document.createElement("option");
+                    option.value = playlistId;
+                    option.textContent = playlist.name;
+                    playlistSelect.appendChild(option);
+                }
+            }
+
+            // Обновляем список видео при выборе плейлиста
+            function updateUrls() {
+                const playlistId = document.getElementById("playlist").value;
+                const urlSelect = document.getElementById("url");
+                
+                // Очищаем существующие опции
+                urlSelect.innerHTML = '<option value="">Select A Video</option>';
+                
+                if (playlistId && playlists[playlistId]) {
+                    // Добавляем все видео из выбранного плейлиста
+                    playlists[playlistId].videos.forEach(video => {
+                        const option = document.createElement("option");
+                        option.value = video.url;
+                        option.textContent = video.name;
+                        urlSelect.appendChild(option);
+                    });
+                }
+                
+                updateNextButton();
+            }
+
+            // Остальной JavaScript код остается таким же, как в предыдущем примере
+            var hls = null;
+            var videoSegments = [];
+            var videoId = '';
+            var currentPlaylist = '';
+            var currentVideoIndex = 0;
+            var abortController = new AbortController();
+
+            function initHLS() {
+                if (Hls.isSupported()) {
+                    hls = new Hls({
+                        maxBufferSize: 0,
+                        maxBufferLength: 30,
+                        startPosition: -1,
+                        enableWorker: true,
+                        lowLatencyMode: false,
+                        backBufferLength: 30
+                    });
+                    
+                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        console.log('Manifest parsed, video ready');
+                        document.getElementById('downloadBtn').style.display = 'inline-block';
+                        document.getElementById('status').textContent = 'Video ready';
+                    });
+                    
+                    hls.on(Hls.Events.ERROR, function(event, data) {
+                        console.error('HLS error:', data);
+                        if (data.fatal) {
+                            switch(data.type) {
+                                case Hls.ErrorTypes.NETWORK_ERROR:
+                                    alert('Network error occurred, please try again');
+                                    break;
+                                case Hls.ErrorTypes.MEDIA_ERROR:
+                                    alert('Media error occurred, trying to recover');
+                                    hls.recoverMediaError();
+                                    break;
+                                default:
+                                    alert('Cannot recover, please try another video');
+                                    break;
+                            }
+                        }
+                    });
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.addEventListener('loadedmetadata', function() {
+                        document.getElementById('downloadBtn').style.display = 'inline-block';
+                    });
+                } else {
+                    alert('HLS is not supported in your browser. Please use Chrome, Firefox, or Safari.');
+                }
+            }
+
+            function extractVideoId(url) {
+                const match = url.match(/([a-z0-9]{10})(?:\/|$)/);
+                return match ? match[1] : null;
+            }
+
+            async function checkSegmentExists(url) {
+                try {
+                    const response = await fetch(url, { 
+                        method: 'HEAD',
+                        signal: abortController.signal
+                    });
+                    return response.status === 200;
+                } catch (e) {
+                    console.error('Error checking segment:', e);
+                    return false;
+                }
+            }
+
+            async function findVideoSegments(videoId) {
+                const statusLabel = document.getElementById("status");
+                videoSegments = [];
+                let segmentNumber = 1;
+                let segmentExists = true;
+                let batchSize = 50;
+                let lastSuccessfulBatch = 0;
+
+                statusLabel.textContent = "Searching for video segments...";
+
+                while (segmentExists && segmentNumber < 1000) {
+                    const segmentUrl = `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-${String(segmentNumber).padStart(5, "0")}.ts`;
+                    
+                    if (await checkSegmentExists(segmentUrl)) {
+                        lastSuccessfulBatch = segmentNumber;
+                        segmentNumber += batchSize;
+                    } else {
+                        segmentExists = false;
+                    }
+                }
+
+                segmentNumber = Math.max(1, lastSuccessfulBatch - batchSize + 1);
+                segmentExists = true;
+                let lastSegment = 0;
+
+                while (segmentExists && segmentNumber < 1000) {
+                    const segmentUrl = `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-${String(segmentNumber).padStart(5, "0")}.ts`;
+                    
+                    if (await checkSegmentExists(segmentUrl)) {
+                        lastSegment = segmentNumber;
+                        segmentNumber++;
+                    } else {
+                        segmentExists = false;
+                    }
+                }
+
+                if (lastSegment > 0) {
+                    for (let i = 1; i <= lastSegment; i++) {
+                        videoSegments.push({
+                            url: `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-${String(i).padStart(5, "0")}.ts`,
+                            number: i
+                        });
+                    }
+                    statusLabel.textContent = `Found ${lastSegment} video segments`;
+                    return true;
+                } else {
+                    statusLabel.textContent = "No video segments found";
+                    return false;
+                }
+            }
+
+            function createHLSPlaylist() {
+                let playlist = "#EXTM3U\n";
+                playlist += "#EXT-X-VERSION:3\n";
+                playlist += "#EXT-X-TARGETDURATION:10\n";
+                playlist += "#EXT-X-MEDIA-SEQUENCE:0\n";
+                playlist += "#EXT-X-PLAYLIST-TYPE:VOD\n";
+                
+                videoSegments.forEach(segment => {
+                    playlist += `#EXTINF:10.0,\n`;
+                    playlist += `${segment.url}\n`;
+                });
+                
+                playlist += "#EXT-X-ENDLIST\n";
+                return playlist;
+            }
+
+            async function stream() {
+                const rawUrl = document.getElementById("url").value || document.getElementById("customUrl").value;
+                
+                if (!rawUrl) {
+                    alert("Please select a video or enter a URL");
+                    return;
+                }
+
+                if (hls) {
+                    hls.destroy();
+                }
+                initHLS();
+                
+                document.getElementById('downloadBtn').style.display = 'none';
+                document.getElementById('status').textContent = 'Processing video...';
+                
+                videoId = extractVideoId(rawUrl);
+                if (!videoId) {
+                    alert("Invalid URL format. Please check the URL and try again.");
+                    return;
+                }
+
+                if (!await findVideoSegments(videoId)) {
+                    alert("Failed to find video segments. The video may not be available.");
+                    return;
+                }
+
+                const playlist = createHLSPlaylist();
+                const video = document.getElementById('video');
+                
+                if (hls) {
+                    hls.loadSource(URL.createObjectURL(new Blob([playlist], { type: 'application/x-mpegURL' })));
+                    hls.attachMedia(video);
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.src = URL.createObjectURL(new Blob([playlist], { type: 'application/x-mpegURL' }));
+                }
+            }
+
+            async function downloadVideo() {
+                if (videoSegments.length === 0) {
+                    alert("No video segments available to download");
+                    return;
+                }
+
+                const statusLabel = document.getElementById("status");
+                const progressContainer = document.getElementById("progressContainer");
+                const progressBar = document.getElementById("downloadProgress");
+                
+                statusLabel.textContent = "Preparing download...";
+                progressContainer.style.display = 'block';
+                progressBar.style.width = '0%';
+                progressBar.textContent = '0%';
+                
+                try {
+                    const chunks = [];
+                    let downloaded = 0;
+                    const totalSegments = videoSegments.length;
+                    
+                    for (let i = 0; i < totalSegments; i++) {
+                        const segment = videoSegments[i];
+                        statusLabel.textContent = `Downloading segment ${i+1}/${totalSegments}...`;
+                        
+                        try {
+                            const response = await fetch(segment.url, { signal: abortController.signal });
+                            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                            
+                            const buffer = await response.arrayBuffer();
+                            chunks.push(buffer);
+                            downloaded++;
+                            
+                            const progress = Math.round((downloaded / totalSegments) * 100);
+                            progressBar.style.width = `${progress}%`;
+                            progressBar.textContent = `${progress}%`;
+                            
+                        } catch (error) {
+                            console.error(`Failed to download segment ${i+1}:`, error);
+                        }
+                    }
+                    
+                    if (chunks.length === 0) {
+                        throw new Error("No segments were downloaded successfully");
+                    }
+                    
+                    statusLabel.textContent = "Combining segments...";
+                    const fullBlob = new Blob(chunks, { type: 'video/MP2T' });
+                    const videoUrl = URL.createObjectURL(fullBlob);
+                    
+                    const a = document.createElement('a');
+                    a.href = videoUrl;
+                    a.download = `skillcapped_${videoId}.ts`;
+                    document.body.appendChild(a);
+                    a.click();
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(videoUrl);
+                        statusLabel.textContent = "Download completed!";
+                        setTimeout(() => {
+                            progressContainer.style.display = 'none';
+                        }, 2000);
+                    }, 100);
+                    
+                } catch (error) {
+                    console.error('Download failed:', error);
+                    statusLabel.textContent = "Download failed: " + error.message;
+                    progressContainer.style.display = 'none';
+                }
+            }
+
+            function nextUrl() {
+                const playlistSelect = document.getElementById("playlist");
+                const urlSelect = document.getElementById("url");
+                
+                if (urlSelect.selectedIndex < urlSelect.options.length - 1) {
+                    urlSelect.selectedIndex++;
+                    stream();
+                } else if (playlistSelect.selectedIndex < playlistSelect.options.length - 1) {
+                    playlistSelect.selectedIndex++;
+                    updateUrls();
+                    if (urlSelect.options.length > 1) {
+                        urlSelect.selectedIndex = 1;
+                        stream();
+                    }
+                } else {
+                    alert("No more videos available");
+                }
+                updateNextButton();
+            }
+
+            function prevUrl() {
+                const playlistSelect = document.getElementById("playlist");
+                const urlSelect = document.getElementById("url");
+                
+                if (urlSelect.selectedIndex > 1) {
+                    urlSelect.selectedIndex--;
+                    stream();
+                } else if (playlistSelect.selectedIndex > 1) {
+                    playlistSelect.selectedIndex--;
+                    updateUrls();
+                    if (urlSelect.options.length > 1) {
+                        urlSelect.selectedIndex = urlSelect.options.length - 1;
+                        stream();
+                    }
+                } else {
+                    alert("This is the first video");
+                }
+                updateNextButton();
+            }
+
+            function updateNextButton() {
+                const playlistSelect = document.getElementById("playlist");
+                const urlSelect = document.getElementById("url");
+                const nextButton = document.getElementById("nextButton");
+
+                if (urlSelect.selectedIndex === urlSelect.options.length - 1) {
+                    nextButton.textContent = "Next Playlist";
+                } else {
+                    nextButton.textContent = "Next Video";
+                }
+            }
+
+            // Инициализация при загрузке страницы
+            document.addEventListener('DOMContentLoaded', function() {
+                initHLS();
+                initPlaylists(); // Инициализируем плейлисты
+                updateUrls();
+            });
+        </script>
+    </body>
+</html>
