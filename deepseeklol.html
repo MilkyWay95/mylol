@@ -4,134 +4,168 @@
     <meta charset="utf-8">
     <title>LoL Iron to Silver Player</title>
     <style>
-        /* Стили остаются такими же */
         body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background-color: #f5f5f5; }
         .player-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        /* ... остальные стили ... */
+        select, input { padding: 10px; margin: 5px 0; width: 100%; max-width: 500px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 10px 15px; margin: 5px 5px 5px 0; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #45a049; }
+        #video { width: 100%; max-width: 800px; height: 450px; background: #000; margin-top: 20px; }
+        .controls { margin: 15px 0; }
+        #status { color: #666; font-style: italic; margin-top: 10px; }
+        #downloadBtn { background: #2196F3; }
+        #downloadBtn:hover { background: #0b7dda; }
+        .progress-container { width: 100%; background-color: #ddd; margin-top: 10px; border-radius: 4px; display: none; }
+        #downloadProgress { width: 0; height: 20px; background-color: #4CAF50; border-radius: 4px; text-align: center; line-height: 20px; color: white; }
+        .error { color: red; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
-    <!-- HTML остаётся таким же -->
     <div class="player-container">
-        <!-- ... предыдущий HTML ... -->
+        <h1>LoL Iron to Silver Guide</h1>
+        <div>
+            <label for="url">Select Video:</label>
+            <select id="url" style="width: 100%;">
+                <option value="">Choose a lesson</option>
+                <option value="7c05gxjdt7">1. Bronze to Diamond Course Introduction (1:39)</option>
+                <option value="8krm8cc13t">2. Bronze to Diamond Episode 1 (14:14)</option>
+                <option value="r5j0v9dj38">3. Introduction ADC Basics (63:13)</option>
+                <option value="rfvkqf8g1z">4. Basic Mechanics (61:46)</option>
+                <option value="4wzrjcf6nn">5. Map Awareness (34:51)</option>
+                <option value="80kt8ps0k3">6. Objective Control Basics (75:18)</option>
+                <option value="8tfwzdsvk6">7. Simple Wave Management (60:21)</option>
+                <option value="qj8l3hld93">8. Climbing Fundamentals (44:03)</option>
+            </select>
+        </div>
+        <div class="controls">
+            <button onclick="playVideo()">Play</button>
+            <button onclick="stopVideo()">Stop</button>
+            <button id="downloadBtn" onclick="downloadVideo()" disabled>Download</button>
+        </div>
+        <div id="status">Select a video to play</div>
+        <video id="video" controls></video>
     </div>
 
     <script>
-        const videoDurations = {
-            "7c05gxjdt7": 99,    // 1:39
-            "8krm8cc13t": 854,   // 14:14
-            "r5j0v9dj38": 3793,  // 63:13
-            "rfvkqf8g1z": 3706,  // 61:46
-            "4wzrjcf6nn": 2091,  // 34:51
-            "80kt8ps0k3": 4518,  // 75:18
-            "8tfwzdsvk6": 3621,  // 60:21
-            "qj8l3hld93": 2643   // 44:03
-        };
+        const videoElement = document.getElementById('video');
+        const statusElement = document.getElementById('status');
+        const downloadBtn = document.getElementById('downloadBtn');
+        let hls;
 
-        var hls = new Hls();
-        var videoSegments = [];
-        var videoId = '';
-
-        async function getRealSegmentDuration(videoId) {
-            // Проверяем первые 3 сегмента для определения реальной длительности
-            const testSegments = [
-                `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-00001.ts`,
-                `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-00002.ts`,
-                `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-00003.ts`
-            ];
-            
-            try {
-                const response = await fetch(testSegments[0], { method: 'HEAD' });
-                if (!response.ok) return null;
-                
-                // Создаем временный видео элемент для анализа длительности
-                const tempVideo = document.createElement('video');
-                tempVideo.preload = 'metadata';
-                
-                return new Promise((resolve) => {
-                    tempVideo.onloadedmetadata = function() {
-                        resolve(tempVideo.duration || 10); // По умолчанию 10 сек
-                    };
-                    tempVideo.src = testSegments[0];
-                });
-            } catch (e) {
-                return 10; // Возвращаем значение по умолчанию
+        async function playVideo() {
+            const videoId = document.getElementById('url').value;
+            if (!videoId) {
+                alert('Please select a video first!');
+                return;
             }
-        }
 
-        async function findVideoSegments(videoId) {
-            const statusLabel = document.getElementById("status");
-            videoSegments = [];
-            
-            // Получаем общую длительность видео
-            const totalDuration = videoDurations[videoId] || 3600; // 1 час по умолчанию
-            const segmentDuration = await getRealSegmentDuration(videoId);
-            
-            // Рассчитываем примерное количество сегментов
-            const estimatedSegments = Math.ceil(totalDuration / (segmentDuration || 10));
-            
-            statusLabel.textContent = `Searching for ${estimatedSegments} segments...`;
-            
-            // Проверяем доступность диапазона сегментов
-            let lastValidSegment = 0;
-            for (let i = 1; i <= estimatedSegments; i++) {
-                const segmentUrl = `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-${String(i).padStart(5, "0")}.ts`;
+            statusElement.textContent = 'Loading...';
+            downloadBtn.disabled = true;
+
+            // Останавливаем предыдущее видео
+            if (hls) {
+                hls.destroy();
+            }
+
+            // Пробуем два варианта URL сегментов
+            const baseUrls = [
+                `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/`,
+                `https://d15x55s5df2f5v.cloudfront.net/${videoId}/`
+            ];
+
+            let foundSegments = false;
+
+            for (const baseUrl of baseUrls) {
+                const testSegment = `${baseUrl}HIDDEN4500-00001.ts`;
                 try {
-                    const response = await fetch(segmentUrl, { method: 'HEAD' });
+                    const response = await fetch(testSegment, { method: 'HEAD' });
                     if (response.ok) {
-                        videoSegments.push({
-                            url: segmentUrl,
-                            number: i
-                        });
-                        lastValidSegment = i;
-                    } else if (i > lastValidSegment + 10) {
+                        await initHLS(baseUrl, videoId);
+                        foundSegments = true;
                         break;
                     }
                 } catch (e) {
-                    if (i > lastValidSegment + 10) break;
+                    console.log(`Failed to access ${baseUrl}`);
                 }
             }
 
-            if (videoSegments.length > 0) {
-                statusLabel.textContent = `Found ${videoSegments.length} segments (total ~${Math.round(videoSegments.length * segmentDuration / 60)} min)`;
-                return true;
-            } else {
-                statusLabel.textContent = "No segments found";
-                return false;
+            if (!foundSegments) {
+                statusElement.textContent = 'Error: Cannot access video segments';
+                statusElement.className = 'error';
             }
         }
 
-        function createHLSPlaylist() {
-            const videoElement = document.getElementById('video');
-            let playlist = "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:10\n";
-            playlist += "#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-PLAYLIST-TYPE:VOD\n";
+        async function initHLS(baseUrl, videoId) {
+            const manifestUrl = `${baseUrl}playlist.m3u8`;
             
-            // Используем реальную длительность сегментов
-            videoSegments.forEach(segment => {
-                playlist += `#EXTINF:10.0,\n${segment.url}\n`;
-            });
-            
-            playlist += "#EXT-X-ENDLIST";
-            return playlist;
-        }
-
-        async function stream() {
-            // ... предыдущая реализация stream() ...
-        }
-
-        // ... остальные функции (downloadVideo, prevVideo, nextVideo) ...
-
-        // Инициализация
-        document.addEventListener('DOMContentLoaded', function() {
             if (Hls.isSupported()) {
                 hls = new Hls({
-                    maxMaxBufferLength: 600, // Увеличиваем буфер для длинных видео
-                    maxBufferSize: 60*1000*1000, // 60MB буфер
-                    maxBufferLength: 600 // 10 минут буферизации
+                    maxBufferLength: 600,
+                    maxBufferSize: 60*1000*1000,
+                    maxMaxBufferLength: 600
                 });
+                
+                try {
+                    // Пробуем загрузить стандартный HLS плейлист
+                    hls.loadSource(manifestUrl);
+                    hls.attachMedia(videoElement);
+                    
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        videoElement.play();
+                        statusElement.textContent = 'Playing';
+                        downloadBtn.disabled = false;
+                    });
+                    
+                    hls.on(Hls.Events.ERROR, (event, data) => {
+                        if (data.fatal) {
+                            fallbackToManualSegments(baseUrl, videoId);
+                        }
+                    });
+                    
+                } catch (e) {
+                    fallbackToManualSegments(baseUrl, videoId);
+                }
+            } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+                // Для Safari
+                videoElement.src = manifestUrl;
+                videoElement.addEventListener('loadedmetadata', () => {
+                    videoElement.play();
+                    statusElement.textContent = 'Playing';
+                    downloadBtn.disabled = false;
+                });
+            } else {
+                statusElement.textContent = 'Error: HLS not supported';
+                statusElement.className = 'error';
             }
-        });
+        }
+
+        function stopVideo() {
+            if (hls) hls.destroy();
+            if (videoElement) {
+                videoElement.pause();
+                videoElement.src = '';
+            }
+            statusElement.textContent = 'Stopped';
+        }
+
+        function downloadVideo() {
+            alert('Download functionality needs server-side implementation!');
+        }
+
+        // Fallback: если стандартный HLS не работает
+        async function fallbackToManualSegments(baseUrl, videoId) {
+            statusElement.textContent = 'Trying alternative method...';
+            
+            try {
+                // Здесь можно реализовать альтернативный метод
+                // Например, через создание виртуального плейлиста
+                statusElement.textContent = 'Error: Failed to load video';
+                statusElement.className = 'error';
+            } catch (e) {
+                statusElement.textContent = 'Error: ' + e.message;
+                statusElement.className = 'error';
+            }
+        }
     </script>
 </body>
 </html>
