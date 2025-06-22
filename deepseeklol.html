@@ -179,14 +179,14 @@
             irontosilver: {
                 name: "Iron to Silver",
                 videos: [
-                    { name: "1. Bronze to Diamond Course Introduction", url: "https://www.skill-capped.com/lol/browse/course/7c05gxjdt7" },
-                    { name: "2. Bronze to Diamond Episode 1", url: "https://www.skill-capped.com/lol/browse/course/8krm8cc13t" },
-                    { name: "3. Introduction ADC Basics", url: "https://www.skill-capped.com/lol/browse/course/r5j0v9dj38" },
-                    { name: "4. Basic Mechanics", url: "https://www.skill-capped.com/lol/browse/course/rfvkqf8g1z" },
-                    { name: "5. Map Awareness", url: "https://www.skill-capped.com/lol/browse/course/4wzrjcf6nn" },
-                    { name: "6. Objective Control Basics", url: "https://www.skill-capped.com/lol/browse/course/80kt8ps0k3" },
-                    { name: "7. Simple Wave Management", url: "https://www.skill-capped.com/lol/browse/course/8tfwzdsvk6" },
-                    { name: "8. Climbing Fundamentals", url: "https://www.skill-capped.com/lol/browse/course/qj8l3hld93" }
+                    { name: "1. Bronze to Diamond Course Introduction", url: "https://www.skill-capped.com/lol/browse/course/7c05gxjdt7", duration: 99 },   // 1:39
+                    { name: "2. Bronze to Diamond Episode 1", url: "https://www.skill-capped.com/lol/browse/course/8krm8cc13t", duration: 854 },         // 14:14
+                    { name: "3. Introduction ADC Basics", url: "https://www.skill-capped.com/lol/browse/course/r5j0v9dj38", duration: 3793 },           // 63:13
+                    { name: "4. Basic Mechanics", url: "https://www.skill-capped.com/lol/browse/course/rfvkqf8g1z", duration: 3706 },                   // 61:46
+                    { name: "5. Map Awareness", url: "https://www.skill-capped.com/lol/browse/course/4wzrjcf6nn", duration: 2091 },                     // 34:51
+                    { name: "6. Objective Control Basics", url: "https://www.skill-capped.com/lol/browse/course/80kt8ps0k3", duration: 4518 },          // 75:18
+                    { name: "7. Simple Wave Management", url: "https://www.skill-capped.com/lol/browse/course/8tfwzdsvk6", duration: 3621 },            // 60:21
+                    { name: "8. Climbing Fundamentals", url: "https://www.skill-capped.com/lol/browse/course/qj8l3hld93", duration: 2643 }             // 44:03
                 ]
             }
         };
@@ -270,12 +270,16 @@
             playlist += "#EXT-X-TARGETDURATION:10\n";
             playlist += "#EXT-X-MEDIA-SEQUENCE:0\n";
             playlist += "#EXT-X-PLAYLIST-TYPE:VOD\n";
-            
+
+            const videoName = document.getElementById('url').options[document.getElementById('url').selectedIndex].text;
+            const video = playlists[currentPlaylist].videos.find(v => v.name === videoName);
+            const segmentDuration = video.duration ? (video.duration / videoSegments.length) : 10.0;
+
             videoSegments.forEach(segment => {
-                playlist += `#EXTINF:10.0,\n`;
+                playlist += `#EXTINF:${segmentDuration.toFixed(1)},\n`;
                 playlist += `${segment.url}\n`;
             });
-            
+
             playlist += "#EXT-X-ENDLIST\n";
             return playlist;
         }
