@@ -2,170 +2,410 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>LoL Iron to Silver Player</title>
+    <title>LoL Macro Player</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background-color: #f5f5f5; }
-        .player-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        select, input { padding: 10px; margin: 5px 0; width: 100%; max-width: 500px; border: 1px solid #ddd; border-radius: 4px; }
-        button { padding: 10px 15px; margin: 5px 5px 5px 0; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #45a049; }
-        #video { width: 100%; max-width: 800px; height: 450px; background: #000; margin-top: 20px; }
-        .controls { margin: 15px 0; }
-        #status { color: #666; font-style: italic; margin-top: 10px; }
-        #downloadBtn { background: #2196F3; }
-        #downloadBtn:hover { background: #0b7dda; }
-        .progress-container { width: 100%; background-color: #ddd; margin-top: 10px; border-radius: 4px; display: none; }
-        #downloadProgress { width: 0; height: 20px; background-color: #4CAF50; border-radius: 4px; text-align: center; line-height: 20px; color: white; }
-        .error { color: red; }
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .player-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        select, input {
+            padding: 10px;
+            margin: 5px 0;
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px 5px 5px 0;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        #video {
+            width: 100%;
+            max-width: 800px;
+            height: 450px;
+            background: #000;
+            margin-top: 20px;
+        }
+        .controls {
+            margin: 15px 0;
+        }
+        #status {
+            color: #666;
+            font-style: italic;
+            margin-top: 10px;
+        }
+        #downloadBtn {
+            background: #2196F3;
+        }
+        #downloadBtn:hover {
+            background: #0b7dda;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #ddd;
+            margin-top: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        #downloadProgress {
+            width: 0;
+            height: 20px;
+            background-color: #4CAF50;
+            border-radius: 4px;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
     <div class="player-container">
-        <h1>LoL Iron to Silver Guide</h1>
+        <h1>LoL Macro Fundamentals</h1>
+        
+        <div>
+            <label for="playlist">Select Playlist:</label>
+            <select id="playlist" onchange="updateVideos()">
+                <option value="">Choose a playlist</option>
+                <option value="macro">Macro Fundamentals</option>
+                <option value="wavecontrol">Master Wave Control in Minutes</option>
+                <option value="lux">Master Lux in Minutes</option>
+            </select>
+        </div>
+
         <div>
             <label for="url">Select Video:</label>
             <select id="url" style="width: 100%;">
                 <option value="">Choose a lesson</option>
-                <option value="7c05gxjdt7">1. Bronze to Diamond Course Introduction (1:39)</option>
-                <option value="8krm8cc13t">2. Bronze to Diamond Episode 1 (14:14)</option>
-                <option value="r5j0v9dj38">3. Introduction ADC Basics (63:13)</option>
-                <option value="rfvkqf8g1z">4. Basic Mechanics (61:46)</option>
-                <option value="4wzrjcf6nn">5. Map Awareness (34:51)</option>
-                <option value="80kt8ps0k3">6. Objective Control Basics (75:18)</option>
-                <option value="8tfwzdsvk6">7. Simple Wave Management (60:21)</option>
-                <option value="qj8l3hld93">8. Climbing Fundamentals (44:03)</option>
             </select>
         </div>
+
         <div class="controls">
-            <button onclick="playVideo()">Play</button>
-            <button onclick="stopVideo()">Stop</button>
-            <button id="downloadBtn" onclick="downloadVideo()" disabled>Download</button>
+            <button onclick="stream()">Play</button>
+            <button onclick="prevVideo()">Previous</button>
+            <button onclick="nextVideo()">Next</button>
+            <button id="downloadBtn" onclick="downloadVideo()" style="display: none;">Download Video</button>
         </div>
-        <div id="status">Select a video to play</div>
+
+        <div class="progress-container" id="progressContainer">
+            <div id="downloadProgress">0%</div>
+        </div>
+
+        <div id="status"></div>
+        
         <video id="video" controls></video>
     </div>
 
     <script>
-        const videoElement = document.getElementById('video');
-        const statusElement = document.getElementById('status');
-        const downloadBtn = document.getElementById('downloadBtn');
-        let hls;
-
-        async function playVideo() {
-            const videoId = document.getElementById('url').value;
-            if (!videoId) {
-                alert('Please select a video first!');
-                return;
+        var hls = new Hls();
+        var currentVideoIndex = 0;
+        var videoSegments = [];
+        var videoId = '';
+        
+        const playlists = {
+            macro: {
+                name: "Macro Fundamentals",
+                videos: [
+                    { name: "1. What is Macro", url: "https://www.skill-capped.com/lol/browse/course/ypkt1bksy9" },
+                    { name: "2. Strong side and Weak side", url: "https://www.skill-capped.com/lol/browse/course/rz1t6z3z52" },
+                    { name: "3. The Value of pushing waves", url: "https://www.skill-capped.com/lol/browse/course/t1ypc1g5pn" },
+                    { name: "4. Wave Management Basics", url: "https://www.skill-capped.com/lol/browse/course/7pwgsc1v8n" },
+                    { name: "5. Lane Priority", url: "https://www.skill-capped.com/lol/browse/course/jg7565lv5s" },
+                    { name: "6. Rotations", url: "https://www.skill-capped.com/lol/browse/course/hmkqgf86bp" },
+                    { name: "7. Objective Control", url: "https://www.skill-capped.com/lol/browse/course/nkj3p4d0cd" },
+                    { name: "8. Vision Setup", url: "https://www.skill-capped.com/lol/browse/course/rdcpfr0z5n" },
+                    { name: "9. Jungle Tracking", url: "https://www.skill-capped.com/lol/browse/course/gy4rnbjrny" },
+                    { name: "10. Tempo Plays", url: "https://www.skill-capped.com/lol/browse/course/r7hh2tpqrp" },
+                    { name: "11. Back Timings", url: "https://www.skill-capped.com/lol/browse/course/vhrmn36b87" },
+                    { name: "12. Item Spikes", url: "https://www.skill-capped.com/lol/browse/course/qk0vln10jj" },
+                    { name: "13. Teamfight Setup", url: "https://www.skill-capped.com/lol/browse/course/03x2b2p0zz" },
+                    { name: "14. Baron Plays", url: "https://www.skill-capped.com/lol/browse/course/1phkysrwbn" },
+                    { name: "15. Closing Games", url: "https://www.skill-capped.com/lol/browse/course/134hh4k8lz" }
+                ]
+            },
+            wavecontrol: {
+                name: "Master Wave Control in Minutes",
+                videos: [
+                    { name: "1. Slow Push", url: "https://www.skill-capped.com/lol/browse/course/34w9xhmhdp" },
+                    { name: "2. Freezing", url: "https://www.skill-capped.com/lol/browse/course/1t4c69y26s" },
+                    { name: "3. Fast Push", url: "https://www.skill-capped.com/lol/browse/course/07sdsz32xc" },
+                    { name: "4. Advanced Wave Control", url: "https://www.skill-capped.com/lol/browse/course/ch76gyp97j" },
+                    { name: "5. Wave Timing", url: "https://www.skill-capped.com/lol/browse/course/zf04v8h855" },
+                    { name: "6. Lane Priority Techniques", url: "https://www.skill-capped.com/lol/browse/course/khhr0q9dd6" },
+                    { name: "7. Wave Manipulation", url: "https://www.skill-capped.com/lol/browse/course/d01kv5hjjs" },
+                    { name: "8. Bounce Techniques", url: "https://www.skill-capped.com/lol/browse/course/pzflxjqbp1" },
+                    { name: "9. Wave States", url: "https://www.skill-capped.com/lol/browse/course/sk35cwwv46" },
+                    { name: "10. Advanced Freezing", url: "https://www.skill-capped.com/lol/browse/course/9rjzw6h65m" },
+                    { name: "11. Wave Control in Mid Game", url: "https://www.skill-capped.com/lol/browse/course/016tdl9nrw" },
+                    { name: "12. Closing with Wave Control", url: "https://www.skill-capped.com/lol/browse/course/qndjltg8wp" }
+                ]
+            },
+            lux: {
+                name: "Master Lux in Minutes",
+                videos: [
+                    { name: "1. Lux Introduction", url: "https://www.skill-capped.com/lol/browse/course/p62982qh9n" },
+                    { name: "2. What Role to Play Lux", url: "https://www.skill-capped.com/lol/browse/course/0jblzmgz4s" },
+                    { name: "3. Lux Combos", url: "https://www.skill-capped.com/lol/browse/course/02cd747h9j" },
+                    { name: "4. Lux Positioning", url: "https://www.skill-capped.com/lol/browse/course/p6htqnl749" },
+                    { name: "5. Lux Skill Shots", url: "https://www.skill-capped.com/lol/browse/course/tch70zzp0n" },
+                    { name: "6. Lux Builds", url: "https://www.skill-capped.com/lol/browse/course/psjmr2dq73" },
+                    { name: "7. Lux Matchups", url: "https://www.skill-capped.com/lol/browse/course/9jb1jjbz87" },
+                    { name: "8. Lux Teamfighting", url: "https://www.skill-capped.com/lol/browse/course/72f5thkklk" },
+                    { name: "9. Lux Vision Control", url: "https://www.skill-capped.com/lol/browse/course/8tkf9cszrj" },
+                    { name: "10. Lux Power Spikes", url: "https://www.skill-capped.com/lol/browse/course/mtp0ylyh3d" },
+                    { name: "11. Advanced Lux Techniques", url: "https://www.skill-capped.com/lol/browse/course/27h2g30fk1" }
+                ]
             }
+        };
 
-            statusElement.textContent = 'Loading...';
-            downloadBtn.disabled = true;
-
-            // Останавливаем предыдущее видео
-            if (hls) {
-                hls.destroy();
+        function updateVideos() {
+            const playlistSelect = document.getElementById('playlist');
+            const videoSelect = document.getElementById('url');
+            const playlistId = playlistSelect.value;
+            
+            videoSelect.innerHTML = '<option value="">Choose a lesson</option>';
+            
+            if (playlistId && playlists[playlistId]) {
+                playlists[playlistId].videos.forEach(video => {
+                    const option = document.createElement('option');
+                    option.value = video.url;
+                    option.textContent = video.name;
+                    videoSelect.appendChild(option);
+                });
             }
+        }
 
-            // Пробуем два варианта URL сегментов
-            const baseUrls = [
-                `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/`,
-                `https://d15x55s5df2f5v.cloudfront.net/${videoId}/`
-            ];
+        function getVideoId(url) {
+            const match = url.match(/\/([a-z0-9]{10})$/);
+            return match ? match[1] : null;
+        }
 
-            let foundSegments = false;
+        async function findVideoSegments(videoId) {
+            const statusLabel = document.getElementById("status");
+            videoSegments = [];
+            let segmentNumber = 1;
+            let lastSegment = 0;
 
-            for (const baseUrl of baseUrls) {
-                const testSegment = `${baseUrl}HIDDEN4500-00001.ts`;
+            statusLabel.textContent = "Searching for video segments...";
+
+            // First find the last segment
+            for (let i = 1; i <= 1000; i += 50) {
+                const segmentUrl = `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-${String(i).padStart(5, "0")}.ts`;
                 try {
-                    const response = await fetch(testSegment, { method: 'HEAD' });
+                    const response = await fetch(segmentUrl, { method: 'HEAD' });
                     if (response.ok) {
-                        await initHLS(baseUrl, videoId);
-                        foundSegments = true;
+                        lastSegment = i;
+                    } else {
                         break;
                     }
                 } catch (e) {
-                    console.log(`Failed to access ${baseUrl}`);
+                    break;
                 }
             }
 
-            if (!foundSegments) {
-                statusElement.textContent = 'Error: Cannot access video segments';
-                statusElement.className = 'error';
-            }
-        }
-
-        async function initHLS(baseUrl, videoId) {
-            const manifestUrl = `${baseUrl}playlist.m3u8`;
-            
-            if (Hls.isSupported()) {
-                hls = new Hls({
-                    maxBufferLength: 600,
-                    maxBufferSize: 60*1000*1000,
-                    maxMaxBufferLength: 600
-                });
-                
+            // Then find exact segments
+            for (let i = Math.max(1, lastSegment - 50); i <= lastSegment + 50; i++) {
+                const segmentUrl = `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-${String(i).padStart(5, "0")}.ts`;
                 try {
-                    // Пробуем загрузить стандартный HLS плейлист
-                    hls.loadSource(manifestUrl);
-                    hls.attachMedia(videoElement);
-                    
-                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        videoElement.play();
-                        statusElement.textContent = 'Playing';
-                        downloadBtn.disabled = false;
-                    });
-                    
-                    hls.on(Hls.Events.ERROR, (event, data) => {
-                        if (data.fatal) {
-                            fallbackToManualSegments(baseUrl, videoId);
-                        }
-                    });
-                    
+                    const response = await fetch(segmentUrl, { method: 'HEAD' });
+                    if (response.ok) {
+                        videoSegments.push({
+                            url: segmentUrl,
+                            number: i
+                        });
+                    } else if (i > lastSegment) {
+                        break;
+                    }
                 } catch (e) {
-                    fallbackToManualSegments(baseUrl, videoId);
+                    continue;
                 }
-            } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
-                // Для Safari
-                videoElement.src = manifestUrl;
-                videoElement.addEventListener('loadedmetadata', () => {
-                    videoElement.play();
-                    statusElement.textContent = 'Playing';
-                    downloadBtn.disabled = false;
-                });
+            }
+
+            if (videoSegments.length > 0) {
+                statusLabel.textContent = `Found ${videoSegments.length} video segments`;
+                return true;
             } else {
-                statusElement.textContent = 'Error: HLS not supported';
-                statusElement.className = 'error';
+                statusLabel.textContent = "No video segments found";
+                return false;
             }
         }
 
-        function stopVideo() {
-            if (hls) hls.destroy();
-            if (videoElement) {
-                videoElement.pause();
-                videoElement.src = '';
+        function createHLSPlaylist() {
+            let playlist = "#EXTM3U\n";
+            playlist += "#EXT-X-VERSION:3\n";
+            playlist += "#EXT-X-TARGETDURATION:10\n";
+            playlist += "#EXT-X-MEDIA-SEQUENCE:0\n";
+            playlist += "#EXT-X-PLAYLIST-TYPE:VOD\n";
+            
+            videoSegments.forEach(segment => {
+                playlist += `#EXTINF:10.0,\n`;
+                playlist += `${segment.url}\n`;
+            });
+            
+            playlist += "#EXT-X-ENDLIST\n";
+            return playlist;
+        }
+
+        async function stream() {
+            const urlSelect = document.getElementById('url');
+            const videoUrl = urlSelect.value;
+            
+            if (!videoUrl) {
+                alert('Please select a video first');
+                return;
             }
-            statusElement.textContent = 'Stopped';
-        }
-
-        function downloadVideo() {
-            alert('Download functionality needs server-side implementation!');
-        }
-
-        // Fallback: если стандартный HLS не работает
-        async function fallbackToManualSegments(baseUrl, videoId) {
-            statusElement.textContent = 'Trying alternative method...';
+            
+            videoId = getVideoId(videoUrl);
+            if (!videoId) {
+                alert('Invalid video URL');
+                return;
+            }
+            
+            document.getElementById('status').textContent = 'Loading video...';
+            document.getElementById('downloadBtn').style.display = 'none';
             
             try {
-                // Здесь можно реализовать альтернативный метод
-                // Например, через создание виртуального плейлиста
-                statusElement.textContent = 'Error: Failed to load video';
-                statusElement.className = 'error';
-            } catch (e) {
-                statusElement.textContent = 'Error: ' + e.message;
-                statusElement.className = 'error';
+                if (!await findVideoSegments(videoId)) {
+                    throw new Error("Could not find video segments");
+                }
+
+                const playlist = createHLSPlaylist();
+                
+                if (Hls.isSupported()) {
+                    if (hls) hls.destroy();
+                    hls = new Hls();
+                    hls.loadSource(URL.createObjectURL(new Blob([playlist], { type: 'application/x-mpegURL' })));
+                    hls.attachMedia(document.getElementById('video'));
+                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        document.getElementById('video').play();
+                        document.getElementById('status').textContent = 'Now playing: ' + 
+                            urlSelect.options[urlSelect.selectedIndex].text;
+                        document.getElementById('downloadBtn').style.display = 'inline-block';
+                    });
+                } else if (document.getElementById('video').canPlayType('application/vnd.apple.mpegurl')) {
+                    document.getElementById('video').src = URL.createObjectURL(new Blob([playlist], { type: 'application/x-mpegURL' }));
+                    document.getElementById('status').textContent = 'Now playing: ' + 
+                        urlSelect.options[urlSelect.selectedIndex].text;
+                    document.getElementById('downloadBtn').style.display = 'inline-block';
+                }
+            } catch (error) {
+                document.getElementById('status').textContent = 'Error: ' + error.message;
+                console.error(error);
             }
         }
+
+        async function downloadVideo() {
+            if (videoSegments.length === 0) {
+                alert("No video segments available to download");
+                return;
+            }
+
+            const statusLabel = document.getElementById("status");
+            const progressContainer = document.getElementById("progressContainer");
+            const progressBar = document.getElementById("downloadProgress");
+            
+            statusLabel.textContent = "Preparing download...";
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+            
+            try {
+                const chunks = [];
+                let downloaded = 0;
+                const totalSegments = videoSegments.length;
+                
+                for (let i = 0; i < totalSegments; i++) {
+                    const segment = videoSegments[i];
+                    statusLabel.textContent = `Downloading segment ${i+1}/${totalSegments}...`;
+                    
+                    try {
+                        const response = await fetch(segment.url);
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        
+                        const buffer = await response.arrayBuffer();
+                        chunks.push(buffer);
+                        downloaded++;
+                        
+                        const progress = Math.round((downloaded / totalSegments) * 100);
+                        progressBar.style.width = `${progress}%`;
+                        progressBar.textContent = `${progress}%`;
+                        
+                    } catch (error) {
+                        console.error(`Failed to download segment ${i+1}:`, error);
+                    }
+                }
+                
+                if (chunks.length === 0) {
+                    throw new Error("No segments were downloaded successfully");
+                }
+                
+                statusLabel.textContent = "Combining segments...";
+                const fullBlob = new Blob(chunks, { type: 'video/MP2T' });
+                const videoUrl = URL.createObjectURL(fullBlob);
+                
+                const a = document.createElement('a');
+                a.href = videoUrl;
+                a.download = `lol_macro_${videoId}.ts`;
+                document.body.appendChild(a);
+                a.click();
+                
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(videoUrl);
+                    statusLabel.textContent = "Download completed!";
+                    setTimeout(() => {
+                        progressContainer.style.display = 'none';
+                    }, 2000);
+                }, 100);
+                
+            } catch (error) {
+                console.error('Download failed:', error);
+                statusLabel.textContent = "Download failed: " + error.message;
+                progressContainer.style.display = 'none';
+            }
+        }
+
+        function prevVideo() {
+            const urlSelect = document.getElementById('url');
+            if (urlSelect.selectedIndex > 1) {
+                urlSelect.selectedIndex--;
+                stream();
+            }
+        }
+
+        function nextVideo() {
+            const urlSelect = document.getElementById('url');
+            if (urlSelect.selectedIndex < urlSelect.options.length - 1) {
+                urlSelect.selectedIndex++;
+                stream();
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            if (Hls.isSupported()) {
+                hls = new Hls();
+            }
+            updateVideos();
+        });
     </script>
 </body>
 </html>
