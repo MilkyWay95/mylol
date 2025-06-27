@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <title>LoL Macro Player</title>
     <style>
+        /* Все стили остаются без изменений */
         body {
             font-family: Arial, sans-serif;
             max-width: 1200px;
@@ -85,7 +86,11 @@
             <label for="playlist">Select Playlist:</label>
             <select id="playlist" onchange="updateVideos()">
                 <option value="">Choose a playlist</option>
+                <option value="macro">Macro Fundamentals</option>
+                <option value="wavecontrol">Master Wave Control in Minutes</option>
+                <option value="lux">Master Lux in Minutes</option>
                 <option value="irontosilver">Iron to Silver</option>
+                <option value="trading">Master Trading in Minutes</option>
             </select>
         </div>
 
@@ -119,17 +124,88 @@
         var videoId = '';
         
         const playlists = {
+            macro: {
+                name: "Macro Fundamentals",
+                videos: [
+                    { name: "1. What is Macro", url: "https://www.skill-capped.com/lol/browse/course/ypkt1bksy9" },
+                    { name: "2. Strong side and Weak side", url: "https://www.skill-capped.com/lol/browse/course/rz1t6z3z52" },
+                    { name: "3. The Value of pushing waves", url: "https://www.skill-capped.com/lol/browse/course/t1ypc1g5pn" },
+                    { name: "4. Wave Management Basics", url: "https://www.skill-capped.com/lol/browse/course/7pwgsc1v8n" },
+                    { name: "5. Lane Priority", url: "https://www.skill-capped.com/lol/browse/course/jg7565lv5s" },
+                    { name: "6. Rotations", url: "https://www.skill-capped.com/lol/browse/course/hmkqgf86bp" },
+                    { name: "7. Objective Control", url: "https://www.skill-capped.com/lol/browse/course/nkj3p4d0cd" },
+                    { name: "8. Vision Setup", url: "https://www.skill-capped.com/lol/browse/course/rdcpfr0z5n" },
+                    { name: "9. Jungle Tracking", url: "https://www.skill-capped.com/lol/browse/course/gy4rnbjrny" },
+                    { name: "10. Tempo Plays", url: "https://www.skill-capped.com/lol/browse/course/r7hh2tpqrp" },
+                    { name: "11. Back Timings", url: "https://www.skill-capped.com/lol/browse/course/vhrmn36b87" },
+                    { name: "12. Item Spikes", url: "https://www.skill-capped.com/lol/browse/course/qk0vln10jj" },
+                    { name: "13. Teamfight Setup", url: "https://www.skill-capped.com/lol/browse/course/03x2b2p0zz" },
+                    { name: "14. Baron Plays", url: "https://www.skill-capped.com/lol/browse/course/1phkysrwbn" },
+                    { name: "15. Closing Games", url: "https://www.skill-capped.com/lol/browse/course/134hh4k8lz" }
+                ]
+            },
+            wavecontrol: {
+                name: "Master Wave Control in Minutes",
+                videos: [
+                    { name: "1. Slow Push", url: "https://www.skill-capped.com/lol/browse/course/34w9xhmhdp" },
+                    { name: "2. Freezing", url: "https://www.skill-capped.com/lol/browse/course/1t4c69y26s" },
+                    { name: "3. Fast Push", url: "https://www.skill-capped.com/lol/browse/course/07sdsz32xc" },
+                    { name: "4. Advanced Wave Control", url: "https://www.skill-capped.com/lol/browse/course/ch76gyp97j" },
+                    { name: "5. Wave Timing", url: "https://www.skill-capped.com/lol/browse/course/zf04v8h855" },
+                    { name: "6. Lane Priority Techniques", url: "https://www.skill-capped.com/lol/browse/course/khhr0q9dd6" },
+                    { name: "7. Wave Manipulation", url: "https://www.skill-capped.com/lol/browse/course/d01kv5hjjs" },
+                    { name: "8. Bounce Techniques", url: "https://www.skill-capped.com/lol/browse/course/pzflxjqbp1" },
+                    { name: "9. Wave States", url: "https://www.skill-capped.com/lol/browse/course/sk35cwwv46" },
+                    { name: "10. Advanced Freezing", url: "https://www.skill-capped.com/lol/browse/course/9rjzw6h65m" },
+                    { name: "11. Wave Control in Mid Game", url: "https://www.skill-capped.com/lol/browse/course/016tdl9nrw" },
+                    { name: "12. Closing with Wave Control", url: "https://www.skill-capped.com/lol/browse/course/qndjltg8wp" }
+                ]
+            },
+            lux: {
+                name: "Master Lux in Minutes",
+                videos: [
+                    { name: "1. Lux Introduction", url: "https://www.skill-capped.com/lol/browse/course/p62982qh9n" },
+                    { name: "2. What Role to Play Lux", url: "https://www.skill-capped.com/lol/browse/course/0jblzmgz4s" },
+                    { name: "3. Lux Combos", url: "https://www.skill-capped.com/lol/browse/course/02cd747h9j" },
+                    { name: "4. Lux Positioning", url: "https://www.skill-capped.com/lol/browse/course/p6htqnl749" },
+                    { name: "5. Lux Skill Shots", url: "https://www.skill-capped.com/lol/browse/course/tch70zzp0n" },
+                    { name: "6. Lux Builds", url: "https://www.skill-capped.com/lol/browse/course/psjmr2dq73" },
+                    { name: "7. Lux Matchups", url: "https://www.skill-capped.com/lol/browse/course/9jb1jjbz87" },
+                    { name: "8. Lux Teamfighting", url: "https://www.skill-capped.com/lol/browse/course/72f5thkklk" },
+                    { name: "9. Lux Vision Control", url: "https://www.skill-capped.com/lol/browse/course/8tkf9cszrj" },
+                    { name: "10. Lux Power Spikes", url: "https://www.skill-capped.com/lol/browse/course/mtp0ylyh3d" },
+                    { name: "11. Advanced Lux Techniques", url: "https://www.skill-capped.com/lol/browse/course/27h2g30fk1" }
+                ]
+            },
             irontosilver: {
                 name: "Iron to Silver",
                 videos: [
                     { name: "1. Bronze to Diamond Course Introduction", url: "https://www.skill-capped.com/lol/browse/course/7c05gxjdt7" },
                     { name: "2. Bronze to Diamond Episode 1", url: "https://www.skill-capped.com/lol/browse/course/8krm8cc13t" },
                     { name: "3. Introduction ADC Basics", url: "https://www.skill-capped.com/lol/browse/course/r5j0v9dj38" },
-                    { name: "4. Episode 4", url: "https://www.skill-capped.com/lol/browse/course/rfvkqf8g1z" },
-                    { name: "5. Episode 5", url: "https://www.skill-capped.com/lol/browse/course/4wzrjcf6nn" },
-                    { name: "6. Episode 6", url: "https://www.skill-capped.com/lol/browse/course/80kt8ps0k3" },
-                    { name: "7. Episode 7", url: "https://www.skill-capped.com/lol/browse/course/8tfwzdsvk6" },
-                    { name: "8. Episode 8", url: "https://www.skill-capped.com/lol/browse/course/qj8l3hld93" }
+                    { name: "4. Basic Mechanics", url: "https://www.skill-capped.com/lol/browse/course/rfvkqf8g1z" },
+                    { name: "5. Map Awareness", url: "https://www.skill-capped.com/lol/browse/course/4wzrjcf6nn" },
+                    { name: "6. Objective Control Basics", url: "https://www.skill-capped.com/lol/browse/course/80kt8ps0k3" },
+                    { name: "7. Simple Wave Management", url: "https://www.skill-capped.com/lol/browse/course/8tfwzdsvk6" },
+                    { name: "8. Climbing Fundamentals", url: "https://www.skill-capped.com/lol/browse/course/qj8l3hld93" }
+                ]
+            },
+            trading: {
+                name: "Master Trading in Minutes",
+                videos: [
+                    { name: "1. Trading Fundamentals", url: "https://www.skill-capped.com/lol/browse/course/4hcwyqqdbw" },
+                    { name: "2. Understanding Trading Patterns", url: "https://www.skill-capped.com/lol/browse/course/9kc013ygmp" },
+                    { name: "3. Lane Positioning for Trades", url: "https://www.skill-capped.com/lol/browse/course/dq5t3mcpyf" },
+                    { name: "4. Cooldown Tracking", url: "https://www.skill-capped.com/lol/browse/course/4dt3d8rbcc" },
+                    { name: "5. Minion Advantage in Trades", url: "https://www.skill-capped.com/lol/browse/course/7jdmdgrrs0" },
+                    { name: "6. Trading Stance", url: "https://www.skill-capped.com/lol/browse/course/gl90k3hcv5" },
+                    { name: "7. Advanced Trading Techniques", url: "https://www.skill-capped.com/lol/browse/course/tbph7sbncb" },
+                    { name: "8. Matchup-Specific Trading", url: "https://www.skill-capped.com/lol/browse/course/5hkydv8cg9" },
+                    { name: "9. Trading in Different Phases", url: "https://www.skill-capped.com/lol/browse/course/dctttj3fqj" },
+                    { name: "10. Psychological Aspects of Trading", url: "https://www.skill-capped.com/lol/browse/course/ttl103mvnk" },
+                    { name: "11. Trading vs Different Champions", url: "https://www.skill-capped.com/lol/browse/course/pftf1dkc08" },
+                    { name: "12. Recovery from Bad Trades", url: "https://www.skill-capped.com/lol/browse/course/52mp48wf42" },
+                    { name: "13. Closing Advantages from Trades", url: "https://www.skill-capped.com/lol/browse/course/k5k4k3zmxc" }
                 ]
             }
         };
@@ -164,48 +240,31 @@
 
             statusLabel.textContent = "Searching for video segments...";
 
-            // First find the last segment with binary search for long videos
-            let low = 1;
-            let high = 2000; // Increased limit for long videos
-            let found = 0;
-            
-            while (low <= high) {
-                let mid = Math.floor((low + high) / 2);
-                const segmentUrl = `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-${String(mid).padStart(5, "0")}.ts`;
-                
+            for (let i = 1; i <= 1000; i += 50) {
+                const segmentUrl = `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-${String(i).padStart(5, "0")}.ts`;
                 try {
                     const response = await fetch(segmentUrl, { method: 'HEAD' });
                     if (response.ok) {
-                        found = mid;
-                        low = mid + 1;
+                        lastSegment = i;
                     } else {
-                        high = mid - 1;
+                        break;
                     }
                 } catch (e) {
-                    high = mid - 1;
+                    break;
                 }
             }
-            
-            lastSegment = found;
 
-            // Then find all segments from first to last
-            const batchSize = 50;
-            for (let batchStart = 1; batchStart <= lastSegment; batchStart += batchSize) {
-                const batchEnd = Math.min(batchStart + batchSize - 1, lastSegment);
-                
-                // Check if the batch exists
-                const batchUrl = `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-${String(batchEnd).padStart(5, "0")}.ts`;
+            for (let i = Math.max(1, lastSegment - 50); i <= lastSegment + 50; i++) {
+                const segmentUrl = `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-${String(i).padStart(5, "0")}.ts`;
                 try {
-                    const response = await fetch(batchUrl, { method: 'HEAD' });
+                    const response = await fetch(segmentUrl, { method: 'HEAD' });
                     if (response.ok) {
-                        // If batch exists, add all segments in this batch
-                        for (let i = batchStart; i <= batchEnd; i++) {
-                            const segmentUrl = `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-${String(i).padStart(5, "0")}.ts`;
-                            videoSegments.push({
-                                url: segmentUrl,
-                                number: i
-                            });
-                        }
+                        videoSegments.push({
+                            url: segmentUrl,
+                            number: i
+                        });
+                    } else if (i > lastSegment) {
+                        break;
                     }
                 } catch (e) {
                     continue;
@@ -264,12 +323,7 @@
                 
                 if (Hls.isSupported()) {
                     if (hls) hls.destroy();
-                    hls = new Hls({
-                        maxMaxBufferLength: 600, // Increased buffer for long videos
-                        maxBufferLength: 60,
-                        maxBufferSize: 60 * 1000 * 1000,
-                        maxBufferHole: 10
-                    });
+                    hls = new Hls();
                     hls.loadSource(URL.createObjectURL(new Blob([playlist], { type: 'application/x-mpegURL' })));
                     hls.attachMedia(document.getElementById('video'));
                     hls.on(Hls.Events.MANIFEST_PARSED, function() {
@@ -310,30 +364,24 @@
                 let downloaded = 0;
                 const totalSegments = videoSegments.length;
                 
-                // Download in batches to prevent memory issues with long videos
-                const batchSize = 10;
-                for (let batchStart = 0; batchStart < totalSegments; batchStart += batchSize) {
-                    const batchEnd = Math.min(batchStart + batchSize, totalSegments);
+                for (let i = 0; i < totalSegments; i++) {
+                    const segment = videoSegments[i];
+                    statusLabel.textContent = `Downloading segment ${i+1}/${totalSegments}...`;
                     
-                    for (let i = batchStart; i < batchEnd; i++) {
-                        const segment = videoSegments[i];
-                        statusLabel.textContent = `Downloading segment ${i+1}/${totalSegments}...`;
+                    try {
+                        const response = await fetch(segment.url);
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                         
-                        try {
-                            const response = await fetch(segment.url);
-                            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                            
-                            const buffer = await response.arrayBuffer();
-                            chunks.push(buffer);
-                            downloaded++;
-                            
-                            const progress = Math.round((downloaded / totalSegments) * 100);
-                            progressBar.style.width = `${progress}%`;
-                            progressBar.textContent = `${progress}%`;
-                            
-                        } catch (error) {
-                            console.error(`Failed to download segment ${i+1}:`, error);
-                        }
+                        const buffer = await response.arrayBuffer();
+                        chunks.push(buffer);
+                        downloaded++;
+                        
+                        const progress = Math.round((downloaded / totalSegments) * 100);
+                        progressBar.style.width = `${progress}%`;
+                        progressBar.textContent = `${progress}%`;
+                        
+                    } catch (error) {
+                        console.error(`Failed to download segment ${i+1}:`, error);
                     }
                 }
                 
@@ -347,7 +395,7 @@
                 
                 const a = document.createElement('a');
                 a.href = videoUrl;
-                a.download = `lol_irontosilver_${videoId}.ts`;
+                a.download = `lol_macro_${videoId}.ts`;
                 document.body.appendChild(a);
                 a.click();
                 
