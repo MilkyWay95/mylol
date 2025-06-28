@@ -90,10 +90,10 @@
                 <option value="wavecontrol">Master Wave Control in Minutes</option>
                 <option value="lux">Master Lux in Minutes</option>
                 <option value="irontosilver">Iron to Silver</option>
+                <option value="trading">Master Trading in Minutes</option>
             </select>
         </div>
 
-        <!-- Остальная часть HTML остается без изменений -->
         <div>
             <label for="url">Select Video:</label>
             <select id="url" style="width: 100%;">
@@ -127,7 +127,6 @@
             macro: {
                 name: "Macro Fundamentals",
                 videos: [
-                    /* Существующие видео остаются без изменений */
                     { name: "1. What is Macro", url: "https://www.skill-capped.com/lol/browse/course/ypkt1bksy9" },
                     { name: "2. Strong side and Weak side", url: "https://www.skill-capped.com/lol/browse/course/rz1t6z3z52" },
                     { name: "3. The Value of pushing waves", url: "https://www.skill-capped.com/lol/browse/course/t1ypc1g5pn" },
@@ -148,7 +147,6 @@
             wavecontrol: {
                 name: "Master Wave Control in Minutes",
                 videos: [
-                    /* Существующие видео остаются без изменений */
                     { name: "1. Slow Push", url: "https://www.skill-capped.com/lol/browse/course/34w9xhmhdp" },
                     { name: "2. Freezing", url: "https://www.skill-capped.com/lol/browse/course/1t4c69y26s" },
                     { name: "3. Fast Push", url: "https://www.skill-capped.com/lol/browse/course/07sdsz32xc" },
@@ -166,7 +164,6 @@
             lux: {
                 name: "Master Lux in Minutes",
                 videos: [
-                    /* Существующие видео остаются без изменений */
                     { name: "1. Lux Introduction", url: "https://www.skill-capped.com/lol/browse/course/p62982qh9n" },
                     { name: "2. What Role to Play Lux", url: "https://www.skill-capped.com/lol/browse/course/0jblzmgz4s" },
                     { name: "3. Lux Combos", url: "https://www.skill-capped.com/lol/browse/course/02cd747h9j" },
@@ -192,10 +189,27 @@
                     { name: "7. Simple Wave Management", url: "https://www.skill-capped.com/lol/browse/course/8tfwzdsvk6" },
                     { name: "8. Climbing Fundamentals", url: "https://www.skill-capped.com/lol/browse/course/qj8l3hld93" }
                 ]
+            },
+            trading: {
+                name: "Master Trading in Minutes",
+                videos: [
+                    { name: "1. Trading Fundamentals", url: "https://www.skill-capped.com/lol/browse/course/4hcwyqqdbw" },
+                    { name: "2. Understanding Trading Patterns", url: "https://www.skill-capped.com/lol/browse/course/9kc013ygmp" },
+                    { name: "3. Lane Positioning for Trades", url: "https://www.skill-capped.com/lol/browse/course/dq5t3mcpyf" },
+                    { name: "4. Cooldown Tracking", url: "https://www.skill-capped.com/lol/browse/course/4dt3d8rbcc" },
+                    { name: "5. Minion Advantage in Trades", url: "https://www.skill-capped.com/lol/browse/course/7jdmdgrrs0" },
+                    { name: "6. Trading Stance", url: "https://www.skill-capped.com/lol/browse/course/gl90k3hcv5" },
+                    { name: "7. Advanced Trading Techniques", url: "https://www.skill-capped.com/lol/browse/course/tbph7sbncb" },
+                    { name: "8. Matchup-Specific Trading", url: "https://www.skill-capped.com/lol/browse/course/5hkydv8cg9" },
+                    { name: "9. Trading in Different Phases", url: "https://www.skill-capped.com/lol/browse/course/dctttj3fqj" },
+                    { name: "10. Psychological Aspects of Trading", url: "https://www.skill-capped.com/lol/browse/course/ttl103mvnk" },
+                    { name: "11. Trading vs Different Champions", url: "https://www.skill-capped.com/lol/browse/course/pftf1dkc08" },
+                    { name: "12. Recovery from Bad Trades", url: "https://www.skill-capped.com/lol/browse/course/52mp48wf42" },
+                    { name: "13. Closing Advantages from Trades", url: "https://www.skill-capped.com/lol/browse/course/k5k4k3zmxc" }
+                ]
             }
         };
 
-        // Все остальные функции остаются без изменений
         function updateVideos() {
             const playlistSelect = document.getElementById('playlist');
             const videoSelect = document.getElementById('url');
