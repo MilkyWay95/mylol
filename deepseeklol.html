@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Skill-Capped Video Downloader v2</title>
+    <title>Smart Skill-Capped Finder</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -16,18 +16,10 @@
             background: #16213e;
             padding: 30px;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
-        h1 {
-            color: #e94560;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        h2 {
-            color: #00d2ff;
-            font-size: 16px;
-            margin: 15px 0 10px;
-        }
+        h1 { color: #e94560; text-align: center; }
+        h2 { color: #00d2ff; font-size: 16px; margin: 15px 0 10px; }
+        
         .input-group {
             display: flex;
             gap: 10px;
@@ -42,22 +34,19 @@
             background: #0f3460;
             color: #fff;
             font-size: 14px;
-            min-width: 200px;
+            min-width: 150px;
         }
-        input::placeholder {
-            color: #888;
-        }
-        select option {
-            background: #1a1a2e;
-        }
+        input::placeholder { color: #888; }
+        select option { background: #1a1a2e; }
+        
         button {
-            padding: 12px 24px;
+            padding: 12px 20px;
             border: none;
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s;
-            font-size: 14px;
+            font-size: 13px;
         }
         .btn-play { background: #e94560; color: white; }
         .btn-play:hover { background: #c73652; }
@@ -65,8 +54,10 @@
         .btn-download:hover { background: #00b8e6; }
         .btn-test { background: #f5a623; color: #1a1a2e; }
         .btn-test:hover { background: #d4911e; }
-        .btn-cdn { background: #9b59b6; color: white; }
-        .btn-cdn:hover { background: #8e44ad; }
+        .btn-scan { background: #9b59b6; color: white; }
+        .btn-scan:hover { background: #8e44ad; }
+        .btn-smart { background: #1abc9c; color: white; }
+        .btn-smart:hover { background: #16a085; }
         
         #status {
             padding: 12px;
@@ -77,8 +68,7 @@
             font-family: monospace;
             font-size: 13px;
             white-space: pre-wrap;
-            word-break: break-all;
-            max-height: 200px;
+            max-height: 150px;
             overflow-y: auto;
         }
         #status.error { background: #4a0e1a; color: #ff6b6b; }
@@ -91,52 +81,29 @@
             border-radius: 8px;
             margin: 10px 0;
             display: none;
-            overflow: hidden;
         }
         .progress-bar-fill {
-            height: 30px;
+            height: 25px;
             background: linear-gradient(90deg, #e94560, #00d2ff);
             width: 0%;
             text-align: center;
-            line-height: 30px;
+            line-height: 25px;
             color: white;
             font-weight: bold;
             transition: width 0.3s;
+            border-radius: 8px;
         }
         
         video {
             width: 100%;
-            max-width: 800px;
-            height: 450px;
+            max-height: 400px;
             background: #000;
             margin-top: 15px;
             display: none;
             border-radius: 8px;
         }
         
-        .video-list {
-            margin: 10px 0;
-            padding: 10px;
-            background: #0f3460;
-            border-radius: 8px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        .video-item {
-            padding: 8px 12px;
-            margin: 4px 0;
-            background: #1a1a2e;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .video-item:hover { background: #2a2a4e; }
-        .video-item .id { color: #00d2ff; font-family: monospace; font-size: 12px; }
-        .video-item .name { flex: 1; margin-right: 10px; }
-        
-        .cdn-results {
+        .found-segments {
             margin: 10px 0;
             padding: 10px;
             background: #0f3460;
@@ -147,8 +114,9 @@
             font-size: 12px;
             display: none;
         }
-        .cdn-results .found { color: #69db7c; }
-        .cdn-results .not-found { color: #ff6b6b; }
+        .found-segments .ok { color: #69db7c; }
+        .found-segments .fail { color: #ff6b6b; }
+        .found-segments .info { color: #f5a623; }
         
         .hint {
             color: #666;
@@ -159,38 +127,58 @@
             color: #00d2ff;
             cursor: pointer;
         }
+        
+        .video-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 10px 0;
+            padding: 10px;
+            background: #0f3460;
+            border-radius: 8px;
+        }
+        .video-list .tag {
+            padding: 5px 12px;
+            background: #1a1a2e;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            border: 1px solid #0f3460;
+            transition: all 0.2s;
+        }
+        .video-list .tag:hover {
+            border-color: #00d2ff;
+            background: #2a2a4e;
+        }
+        .video-list .tag.active {
+            border-color: #e94560;
+            background: #4a0e1a;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎬 Skill-Capped Video Downloader v2</h1>
+        <h1>🎯 Smart Skill-Capped Finder</h1>
         
-        <!-- Быстрый выбор видео -->
+        <!-- Быстрый выбор -->
         <div>
-            <h2>📂 Быстрый выбор:</h2>
-            <select id="quickSelect" onchange="quickSelect()">
-                <option value="">— Выберите видео —</option>
-                <optgroup label="Hwei (Master in Minutes)">
-                    <option value="hd8jrqps9v,d4fytw7fl6">EP 01: Understanding Hwei's Kit</option>
-                    <option value="hd8jrqps9v,8m60l9lnm0">EP 02</option>
-                    <option value="hd8jrqps9v,z5t58m9lc8">EP 03</option>
-                    <option value="hd8jrqps9v,p6l9scwmwv">EP 04</option>
-                    <option value="hd8jrqps9v,877mhsvjf6">EP 05</option>
-                    <option value="hd8jrqps9v,9rlgl2ykk4">EP 06</option>
-                    <option value="hd8jrqps9v,y7c8khgb3l">EP 07</option>
-                    <option value="hd8jrqps9v,1l556c1syb">EP 08</option>
-                    <option value="hd8jrqps9v,yxb6pn7mh5">EP 09</option>
-                    <option value="hd8jrqps9v,g5c041w9qs">EP 10</option>
-                    <option value="hd8jrqps9v,284m0k07d1">EP 11</option>
-                    <option value="hd8jrqps9v,dj5tbtprxt">EP 12</option>
-                    <option value="hd8jrqps9v,0zlh90b6cw">EP 13</option>
-                    <option value="hd8jrqps9v,f8n7rgd0rd">EP 14</option>
-                </optgroup>
-                <optgroup label="Другие курсы">
-                    <option value="ypkt1bksy9,">Macro 1</option>
-                    <option value="rz1t6z3z52,">Macro 2</option>
-                </optgroup>
-            </select>
+            <h2>📂 Быстрый выбор (Hwei):</h2>
+            <div class="video-list" id="quickTags">
+                <span class="tag" data-course="hd8jrqps9v" data-video="d4fytw7fl6">EP 01</span>
+                <span class="tag" data-course="hd8jrqps9v" data-video="8m60l9lnm0">EP 02</span>
+                <span class="tag" data-course="hd8jrqps9v" data-video="z5t58m9lc8">EP 03</span>
+                <span class="tag" data-course="hd8jrqps9v" data-video="p6l9scwmwv">EP 04</span>
+                <span class="tag" data-course="hd8jrqps9v" data-video="877mhsvjf6">EP 05</span>
+                <span class="tag" data-course="hd8jrqps9v" data-video="9rlgl2ykk4">EP 06</span>
+                <span class="tag" data-course="hd8jrqps9v" data-video="y7c8khgb3l">EP 07</span>
+                <span class="tag" data-course="hd8jrqps9v" data-video="1l556c1syb">EP 08</span>
+                <span class="tag" data-course="hd8jrqps9v" data-video="yxb6pn7mh5">EP 09</span>
+                <span class="tag" data-course="hd8jrqps9v" data-video="g5c041w9qs">EP 10</span>
+                <span class="tag" data-course="hd8jrqps9v" data-video="284m0k07d1">EP 11</span>
+                <span class="tag" data-course="hd8jrqps9v" data-video="dj5tbtprxt">EP 12</span>
+                <span class="tag" data-course="hd8jrqps9v" data-video="0zlh90b6cw">EP 13</span>
+                <span class="tag" data-course="hd8jrqps9v" data-video="f8n7rgd0rd">EP 14</span>
+            </div>
         </div>
 
         <!-- Ручной ввод -->
@@ -198,54 +186,54 @@
             <h2>🔗 Или вставьте ссылку:</h2>
             <div class="input-group">
                 <input type="text" id="videoUrl" placeholder="https://www.skill-capped.com/lol/browse/course/xxxxx/yyyyy">
+                <button class="btn-smart" onclick="smartFind()">🤖 Smart Find</button>
                 <button class="btn-test" onclick="testVideo()">🔍 Test</button>
                 <button class="btn-play" onclick="playVideo()">▶ Play</button>
                 <button class="btn-download" onclick="downloadVideo()">⬇ Download</button>
-                <button class="btn-cdn" onclick="scanCDN()">🌐 Scan CDN</button>
             </div>
         </div>
 
-        <div id="status">Ready — выберите видео или вставьте ссылку</div>
+        <div id="status">Готово — выберите видео или вставьте ссылку</div>
 
         <div class="progress-bar" id="progressBar">
             <div class="progress-bar-fill" id="progressFill">0%</div>
         </div>
 
-        <div class="cdn-results" id="cdnResults"></div>
+        <div class="found-segments" id="foundSegments"></div>
 
         <video id="videoPlayer" controls></video>
 
         <div class="hint">
-            💡 <strong>Совет:</strong> Сначала нажмите "Test" — это покажет, доступно ли видео.<br>
-            🔍 "Scan CDN" — проверит все возможные варианты CDN.
+            💡 <strong>Smart Find</strong> — автоматически ищет правильный ID и проверяет все CDN.<br>
+            🔍 Если видео не найдено — попробуйте "Test" для детальной проверки.
         </div>
     </div>
 
     <script>
         // ===================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =====================
         let videoSegments = [];
+        let currentCourseId = '';
         let currentVideoId = '';
-        let currentSubId = '';
         let hlsInstance = null;
+        let isSearching = false;
 
         // ===================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====================
         function getIdsFromUrl(url) {
-            // Извлекаем оба ID из URL
+            // Пробуем извлечь ID разными способами
             let match = url.match(/course\/([a-z0-9]{10})\/([a-z0-9]{10})/);
-            if (match) {
-                return { courseId: match[1], videoId: match[2] };
-            }
+            if (match) return { courseId: match[1], videoId: match[2] };
             
             match = url.match(/course\/([a-z0-9]{10})$/);
-            if (match) {
-                return { courseId: match[1], videoId: null };
-            }
+            if (match) return { courseId: match[1], videoId: null };
             
-            // Если переданы два ID через запятую
+            match = url.match(/\/([a-z0-9]{10})$/);
+            if (match) return { courseId: match[1], videoId: null };
+            
             match = url.match(/^([a-z0-9]{10}),([a-z0-9]{10})$/);
-            if (match) {
-                return { courseId: match[1], videoId: match[2] };
-            }
+            if (match) return { courseId: match[1], videoId: match[2] };
+            
+            match = url.match(/^([a-z0-9]{10})$/);
+            if (match) return { courseId: match[1], videoId: null };
             
             return null;
         }
@@ -269,6 +257,12 @@
             document.getElementById('progressBar').style.display = 'none';
         }
 
+        function showSegments(html) {
+            const el = document.getElementById('foundSegments');
+            el.innerHTML = html;
+            el.style.display = 'block';
+        }
+
         function showVideo() {
             document.getElementById('videoPlayer').style.display = 'block';
         }
@@ -277,143 +271,140 @@
             document.getElementById('videoPlayer').style.display = 'none';
         }
 
-        function showCDNResults(html) {
-            const el = document.getElementById('cdnResults');
-            el.innerHTML = html;
-            el.style.display = 'block';
-        }
-
-        function quickSelect() {
-            const select = document.getElementById('quickSelect');
-            const val = select.value;
-            if (!val) return;
+        // ===================== УМНЫЙ ПОИСК =====================
+        async function smartFind() {
+            if (isSearching) return;
             
-            const parts = val.split(',');
-            if (parts.length === 2) {
-                const url = `https://www.skill-capped.com/lol/browse/course/${parts[0]}/${parts[1]}`;
-                document.getElementById('videoUrl').value = url;
-                setStatus(`📌 Выбрано: ${select.options[select.selectedIndex].text}`);
-                // Автоматически тестируем
-                testVideo();
+            const url = document.getElementById('videoUrl').value.trim();
+            if (!url) {
+                setStatus('⚠️ Вставьте ссылку на видео', 'error');
+                return;
             }
-        }
 
-        // ===================== ПОИСК СЕГМЕНТОВ (УЛУЧШЕННЫЙ) =====================
-        async function findSegments(videoId, subId) {
-            setStatus(`🔍 Поиск сегментов для ${videoId}...`);
-            videoSegments = [];
+            isSearching = true;
+            setStatus('🤖 Запуск умного поиска...');
+            showSegments('<div class="info">🔍 Поиск сегментов...</div>');
             
-            // Разные варианты CDN
-            const cdnPatterns = [
-                `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-`,
-                `https://d13z5uuzt1wkbz.cloudfront.net/${subId || videoId}/HIDDEN4500-`,
-                `https://d1e7x5k9m8n6.cloudfront.net/${videoId}/HIDDEN4500-`,
-                `https://cdn.skill-capped.com/videos/${videoId}/`,
-                `https://cdn.skill-capped.com/videos/${subId || videoId}/`,
+            const ids = getIdsFromUrl(url);
+            if (!ids) {
+                setStatus(`❌ Не удалось извлечь ID из: ${url}`, 'error');
+                isSearching = false;
+                return;
+            }
+
+            currentCourseId = ids.courseId;
+            currentVideoId = ids.videoId || ids.courseId;
+            
+            setStatus(`🔍 Поиск для: course=${currentCourseId}, video=${currentVideoId}`);
+            
+            // Список ID для проверки
+            const idsToCheck = [
+                currentVideoId,
+                currentCourseId,
+                currentCourseId.slice(0, 8),
+                currentVideoId.slice(0, 8),
             ];
             
-            let foundSegments = [];
-            let usedPattern = null;
+            // Список CDN паттернов
+            const cdnPatterns = [
+                (id) => `https://d13z5uuzt1wkbz.cloudfront.net/${id}/HIDDEN4500-`,
+                (id) => `https://d13z5uuzt1wkbz.cloudfront.net/${id}/`,
+                (id) => `https://d1e7x5k9m8n6.cloudfront.net/${id}/HIDDEN4500-`,
+                (id) => `https://d1e7x5k9m8n6.cloudfront.net/${id}/`,
+                (id) => `https://cdn.skill-capped.com/videos/${id}/`,
+                (id) => `https://cdn.skill-capped.com/videos/${id}/HIDDEN4500-`,
+            ];
             
-            for (const baseUrl of cdnPatterns) {
-                setStatus(`🔍 Пробуем: ${baseUrl}...`);
-                let lastSegment = 0;
-                let tempSegments = [];
+            let found = false;
+            let resultsHtml = '';
+            let bestSegments = [];
+            
+            for (const id of idsToCheck) {
+                if (found) break;
+                if (!id || id.length < 6) continue;
                 
-                // Быстрый поиск с шагом 10
-                for (let i = 1; i <= 300; i += 10) {
-                    const url = `${baseUrl}${String(i).padStart(5, '0')}.ts`;
-                    try {
-                        const resp = await fetch(url, { method: 'HEAD' });
-                        if (resp.ok) {
-                            lastSegment = i;
-                            tempSegments.push({ url, number: i });
-                            setStatus(`✅ Найден сегмент ${i}`);
-                        }
-                    } catch (e) {
-                        // Пропускаем
-                    }
-                }
-                
-                if (tempSegments.length > 0) {
-                    // Точный сбор вокруг найденного
-                    const start = Math.max(1, lastSegment - 30);
-                    const end = lastSegment + 30;
+                for (const patternFn of cdnPatterns) {
+                    if (found) break;
                     
-                    for (let i = start; i <= end; i++) {
-                        // Проверяем, не добавлен ли уже
-                        if (tempSegments.some(s => s.number === i)) continue;
-                        
-                        const url = `${baseUrl}${String(i).padStart(5, '0')}.ts`;
+                    const baseUrl = patternFn(id);
+                    resultsHtml += `<div class="info">📁 Пробуем: ${baseUrl}</div>`;
+                    showSegments(resultsHtml);
+                    
+                    let tempSegments = [];
+                    let lastSegment = 0;
+                    
+                    // Быстрый поиск
+                    for (let i = 1; i <= 50; i += 5) {
+                        const testUrl = `${baseUrl}${String(i).padStart(5, '0')}.ts`;
                         try {
-                            const resp = await fetch(url, { method: 'HEAD' });
+                            const resp = await fetch(testUrl, { method: 'HEAD' });
                             if (resp.ok) {
-                                tempSegments.push({ url, number: i });
+                                lastSegment = i;
+                                tempSegments.push({ url: testUrl, number: i });
+                                resultsHtml += `<span class="ok">✅ ${i}</span> `;
+                                showSegments(resultsHtml);
                             }
-                        } catch (e) {
-                            // Пропускаем
-                        }
+                        } catch (e) {}
                     }
                     
-                    // Сортируем по номеру
-                    tempSegments.sort((a, b) => a.number - b.number);
-                    
-                    // Проверяем, что сегменты идут подряд
-                    let consecutive = 0;
-                    let prevNum = 0;
-                    for (const seg of tempSegments) {
-                        if (seg.number === prevNum + 1) {
-                            consecutive++;
-                        } else if (prevNum === 0) {
-                            consecutive = 1;
-                        } else {
+                    if (tempSegments.length > 0) {
+                        // Точный сбор
+                        const start = Math.max(1, lastSegment - 15);
+                        const end = lastSegment + 15;
+                        
+                        for (let i = start; i <= end; i++) {
+                            if (tempSegments.some(s => s.number === i)) continue;
+                            const testUrl = `${baseUrl}${String(i).padStart(5, '0')}.ts`;
+                            try {
+                                const resp = await fetch(testUrl, { method: 'HEAD' });
+                                if (resp.ok) {
+                                    tempSegments.push({ url: testUrl, number: i });
+                                }
+                            } catch (e) {}
+                        }
+                        
+                        tempSegments.sort((a, b) => a.number - b.number);
+                        
+                        // Проверяем последовательность
+                        let consecutive = 0;
+                        let prevNum = 0;
+                        let maxConsecutive = 0;
+                        for (const seg of tempSegments) {
+                            if (seg.number === prevNum + 1) {
+                                consecutive++;
+                            } else if (prevNum === 0) {
+                                consecutive = 1;
+                            } else {
+                                consecutive = 0;
+                            }
+                            prevNum = seg.number;
+                            if (consecutive > maxConsecutive) {
+                                maxConsecutive = consecutive;
+                            }
+                        }
+                        
+                        if (maxConsecutive >= 3 && tempSegments.length > 2) {
+                            found = true;
+                            bestSegments = tempSegments;
+                            resultsHtml += `<div class="ok">✅ Найдено ${tempSegments.length} сегментов! (ID: ${id})</div>`;
+                            showSegments(resultsHtml);
                             break;
                         }
-                        prevNum = seg.number;
-                    }
-                    
-                    // Если найдено больше 5 последовательных сегментов — это рабочий паттерн
-                    if (consecutive > 5) {
-                        foundSegments = tempSegments;
-                        usedPattern = baseUrl;
-                        break;
                     }
                 }
             }
             
-            if (foundSegments.length > 0) {
-                videoSegments = foundSegments;
-                setStatus(`✅ Найдено ${videoSegments.length} сегментов! (${usedPattern})`, 'success');
-                return true;
+            if (found && bestSegments.length > 0) {
+                videoSegments = bestSegments;
+                setStatus(`✅ Найдено ${videoSegments.length} сегментов! Можно Play или Download.`, 'success');
+                showSegments(resultsHtml + `<div class="ok">🎯 Готово! Сегментов: ${videoSegments.length}</div>`);
+            } else {
+                setStatus('❌ Не удалось найти сегменты. Видео может быть защищено.', 'error');
+                showSegments(resultsHtml + `<div class="fail">❌ Сегменты не найдены.</div>`);
             }
             
-            // Если не нашли через HIDDEN4500, пробуем другие форматы
-            setStatus('🔄 Пробуем альтернативные форматы...', 'warning');
-            
-            const altPatterns = [
-                `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/`,
-                `https://d13z5uuzt1wkbz.cloudfront.net/${subId || videoId}/`,
-            ];
-            
-            for (const baseUrl of altPatterns) {
-                for (let i = 1; i <= 100; i++) {
-                    const url = `${baseUrl}${String(i).padStart(5, '0')}.ts`;
-                    try {
-                        const resp = await fetch(url, { method: 'HEAD' });
-                        if (resp.ok) {
-                            videoSegments.push({ url, number: i });
-                        }
-                    } catch (e) {}
-                }
-                
-                if (videoSegments.length > 0) {
-                    setStatus(`✅ Найдено ${videoSegments.length} сегментов (альтернативный формат)`, 'success');
-                    return true;
-                }
-            }
-            
-            setStatus('❌ Сегменты не найдены. Возможно, видео защищено.', 'error');
-            return false;
+            isSearching = false;
+            hideProgress();
         }
 
         // ===================== ТЕСТ =====================
@@ -426,148 +417,54 @@
 
             const ids = getIdsFromUrl(url);
             if (!ids) {
-                setStatus(`❌ Не удалось извлечь ID из: ${url}`, 'error');
+                setStatus(`❌ Не удалось извлечь ID`, 'error');
                 return;
             }
 
-            currentVideoId = ids.courseId;
-            currentSubId = ids.videoId;
+            currentCourseId = ids.courseId;
+            currentVideoId = ids.videoId || ids.courseId;
             
-            setStatus(`🧪 Тестируем ID: ${currentVideoId}${currentSubId ? '/' + currentSubId : ''}`);
+            setStatus(`🧪 Тестируем: ${currentCourseId} / ${currentVideoId}`);
             
-            // Проверяем доступность через HEAD запрос
+            let resultsHtml = `<div class="info">🧪 Проверка ID: ${currentCourseId}${currentVideoId ? '/' + currentVideoId : ''}</div>`;
+            
             const testUrls = [
                 `https://d13z5uuzt1wkbz.cloudfront.net/${currentVideoId}/HIDDEN4500-00001.ts`,
-                `https://d13z5uuzt1wkbz.cloudfront.net/${currentSubId || currentVideoId}/HIDDEN4500-00001.ts`,
+                `https://d13z5uuzt1wkbz.cloudfront.net/${currentCourseId}/HIDDEN4500-00001.ts`,
+                `https://d13z5uuzt1wkbz.cloudfront.net/${currentVideoId}/00001.ts`,
+                `https://d1e7x5k9m8n6.cloudfront.net/${currentVideoId}/HIDDEN4500-00001.ts`,
+                `https://cdn.skill-capped.com/videos/${currentVideoId}/00001.ts`,
             ];
             
             let found = false;
-            let resultsHtml = '<h3>📊 Результаты проверки:</h3>';
-            
             for (const testUrl of testUrls) {
                 try {
                     const resp = await fetch(testUrl, { method: 'HEAD' });
                     if (resp.ok) {
-                        resultsHtml += `<div class="found">✅ ${testUrl} — ДОСТУПЕН</div>`;
+                        resultsHtml += `<span class="ok">✅ ${testUrl}</span><br>`;
                         found = true;
                     } else {
-                        resultsHtml += `<div class="not-found">❌ ${testUrl} — ${resp.status}</div>`;
+                        resultsHtml += `<span class="fail">❌ ${testUrl} (${resp.status})</span><br>`;
                     }
                 } catch (e) {
-                    resultsHtml += `<div class="not-found">❌ ${testUrl} — ${e.message}</div>`;
+                    resultsHtml += `<span class="fail">❌ ${testUrl} (ошибка)</span><br>`;
                 }
             }
             
             if (found) {
-                setStatus('✅ Найден доступный сегмент! Можно попробовать Play или Download.', 'success');
-                resultsHtml += '<div class="found">🎯 Попробуйте нажать "Play" или "Download"</div>';
-                showCDNResults(resultsHtml);
-                
-                // Автоматически ищем все сегменты
-                await findSegments(currentVideoId, currentSubId);
+                setStatus('✅ Найден доступный сегмент! Используйте Smart Find для полного поиска.', 'success');
+                // Автоматически запускаем умный поиск
+                await smartFind();
             } else {
                 setStatus('❌ Доступ к сегментам отсутствует. Видео защищено.', 'error');
-                resultsHtml += '<div class="not-found">❌ Ни один из сегментов недоступен. Видео защищено или требует авторизации.</div>';
-                showCDNResults(resultsHtml);
+                showSegments(resultsHtml + `<div class="fail">❌ Ни один сегмент не доступен.</div>`);
             }
-        }
-
-        // ===================== СКАНИРОВАНИЕ CDN =====================
-        async function scanCDN() {
-            const url = document.getElementById('videoUrl').value.trim();
-            if (!url) {
-                setStatus('⚠️ Вставьте ссылку на видео', 'error');
-                return;
-            }
-
-            const ids = getIdsFromUrl(url);
-            if (!ids) {
-                setStatus(`❌ Не удалось извлечь ID`, 'error');
-                return;
-            }
-
-            currentVideoId = ids.courseId;
-            currentSubId = ids.videoId;
-            
-            setStatus(`🔍 Сканирование CDN для ${currentVideoId}...`);
-            showCDNResults('<h3>📡 Сканирование CDN...</h3>');
-            
-            let resultsHtml = `<h3>📡 Результаты сканирования для ${currentVideoId}:</h3>`;
-            let found = false;
-            
-            // Проверяем разные паттерны
-            const patterns = [
-                { url: `https://d13z5uuzt1wkbz.cloudfront.net/${currentVideoId}/HIDDEN4500-`, name: 'Основной CDN (course ID)' },
-                { url: `https://d13z5uuzt1wkbz.cloudfront.net/${currentSubId || currentVideoId}/HIDDEN4500-`, name: 'Основной CDN (video ID)' },
-                { url: `https://d1e7x5k9m8n6.cloudfront.net/${currentVideoId}/HIDDEN4500-`, name: 'CDN 2 (course ID)' },
-                { url: `https://cdn.skill-capped.com/videos/${currentVideoId}/`, name: 'CDN 3 (course ID)' },
-            ];
-            
-            for (const pattern of patterns) {
-                resultsHtml += `<div><strong>📁 ${pattern.name}:</strong><br>`;
-                let hasSegments = false;
-                
-                // Проверяем первые 5 сегментов
-                for (let i = 1; i <= 5; i++) {
-                    const testUrl = `${pattern.url}${String(i).padStart(5, '0')}.ts`;
-                    try {
-                        const resp = await fetch(testUrl, { method: 'HEAD' });
-                        if (resp.ok) {
-                            resultsHtml += `<span class="found">✅ сегмент ${i} доступен</span> `;
-                            hasSegments = true;
-                            found = true;
-                        } else {
-                            resultsHtml += `<span class="not-found">❌ сегмент ${i} (${resp.status})</span> `;
-                        }
-                    } catch (e) {
-                        resultsHtml += `<span class="not-found">❌ сегмент ${i} (ошибка)</span> `;
-                    }
-                }
-                
-                if (hasSegments) {
-                    resultsHtml += `<div class="found">✅ Найдены сегменты! Можно скачивать.</div>`;
-                } else {
-                    resultsHtml += `<div class="not-found">❌ Сегменты не найдены.</div>`;
-                }
-                resultsHtml += `</div><br>`;
-            }
-            
-            if (found) {
-                setStatus('✅ Найдены доступные сегменты!', 'success');
-                // Пробуем найти все сегменты
-                await findSegments(currentVideoId, currentSubId);
-            } else {
-                setStatus('❌ Сегменты не найдены. Видео защищено.', 'error');
-            }
-            
-            showCDNResults(resultsHtml);
         }
 
         // ===================== ВОСПРОИЗВЕДЕНИЕ =====================
         async function playVideo() {
-            const url = document.getElementById('videoUrl').value.trim();
-            if (!url) {
-                setStatus('⚠️ Вставьте ссылку на видео', 'error');
-                return;
-            }
-
-            const ids = getIdsFromUrl(url);
-            if (!ids) {
-                setStatus(`❌ Не удалось извлечь ID`, 'error');
-                return;
-            }
-
-            currentVideoId = ids.courseId;
-            currentSubId = ids.videoId;
-            
-            // Если сегменты ещё не найдены
             if (videoSegments.length === 0) {
-                const found = await findSegments(currentVideoId, currentSubId);
-                if (!found) return;
-            }
-
-            if (videoSegments.length === 0) {
-                setStatus('❌ Нет сегментов для воспроизведения', 'error');
+                setStatus('⚠️ Сначала найдите сегменты (Smart Find или Test)', 'warning');
                 return;
             }
 
@@ -590,31 +487,23 @@
             const video = document.getElementById('videoPlayer');
             showVideo();
             
-            // Уничтожаем старый HLS
             if (hlsInstance) {
                 hlsInstance.destroy();
                 hlsInstance = null;
             }
             
-            // Проверяем HLS поддержку
             if (typeof Hls !== 'undefined' && Hls.isSupported()) {
                 hlsInstance = new Hls();
                 hlsInstance.loadSource(blobUrl);
                 hlsInstance.attachMedia(video);
                 hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
                     video.play().catch(() => {});
-                    setStatus(`▶️ Воспроизведение: ${currentVideoId}`, 'success');
-                });
-                hlsInstance.on(Hls.Events.ERROR, (e, data) => {
-                    if (data.fatal) {
-                        setStatus(`⚠️ Ошибка воспроизведения: ${data.type}`, 'error');
-                    }
+                    setStatus(`▶️ Воспроизведение: ${videoSegments.length} сегментов`, 'success');
                 });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Safari
                 video.src = blobUrl;
                 video.play().catch(() => {});
-                setStatus(`▶️ Воспроизведение: ${currentVideoId}`, 'success');
+                setStatus(`▶️ Воспроизведение: ${videoSegments.length} сегментов`, 'success');
             } else {
                 setStatus('❌ Ваш браузер не поддерживает HLS', 'error');
             }
@@ -622,29 +511,8 @@
 
         // ===================== СКАЧИВАНИЕ =====================
         async function downloadVideo() {
-            const url = document.getElementById('videoUrl').value.trim();
-            if (!url) {
-                setStatus('⚠️ Вставьте ссылку на видео', 'error');
-                return;
-            }
-
-            const ids = getIdsFromUrl(url);
-            if (!ids) {
-                setStatus(`❌ Не удалось извлечь ID`, 'error');
-                return;
-            }
-
-            currentVideoId = ids.courseId;
-            currentSubId = ids.videoId;
-            
-            // Если сегменты ещё не найдены
             if (videoSegments.length === 0) {
-                const found = await findSegments(currentVideoId, currentSubId);
-                if (!found) return;
-            }
-
-            if (videoSegments.length === 0) {
-                setStatus('❌ Нет сегментов для скачивания', 'error');
+                setStatus('⚠️ Сначала найдите сегменты (Smart Find или Test)', 'warning');
                 return;
             }
 
@@ -652,7 +520,7 @@
             let downloaded = 0;
             const total = videoSegments.length;
 
-            showProgress(0, 'Начинаем скачивание...');
+            showProgress(0, 'Начинаем...');
             setStatus(`📥 Скачивание ${total} сегментов...`);
 
             for (let i = 0; i < total; i++) {
@@ -662,20 +530,16 @@
                     if (resp.ok) {
                         const buffer = await resp.arrayBuffer();
                         chunks.push(buffer);
-                    } else {
-                        setStatus(`⚠️ Сегмент ${i+1} не доступен (${resp.status})`, 'warning');
                     }
-                } catch (e) {
-                    setStatus(`⚠️ Ошибка сегмента ${i+1}: ${e.message}`, 'warning');
-                }
+                } catch (e) {}
                 
                 downloaded++;
                 const percent = Math.round((downloaded / total) * 100);
-                showProgress(percent, `${downloaded}/${total} (${chunks.length} успешно)`);
+                showProgress(percent, `${downloaded}/${total} (${chunks.length} OK)`);
             }
 
             if (chunks.length === 0) {
-                setStatus('❌ Ни один сегмент не был скачан', 'error');
+                setStatus('❌ Ни один сегмент не скачан', 'error');
                 hideProgress();
                 return;
             }
@@ -687,7 +551,7 @@
             
             const a = document.createElement('a');
             a.href = blobUrl;
-            a.download = `skillcapped_${currentVideoId}${currentSubId ? '_' + currentSubId : ''}.ts`;
+            a.download = `video_${currentCourseId || 'unknown'}.ts`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -698,18 +562,33 @@
             hideProgress();
         }
 
-        // ===================== ИНИЦИАЛИЗАЦИЯ =====================
+        // ===================== БЫСТРЫЙ ВЫБОР =====================
         document.addEventListener('DOMContentLoaded', function() {
-            setStatus('✅ Готово! Выберите видео или вставьте ссылку.');
-            
+            // Обработка кликов по тегам
+            document.querySelectorAll('.video-list .tag').forEach(tag => {
+                tag.addEventListener('click', function() {
+                    const course = this.dataset.course;
+                    const video = this.dataset.video;
+                    const url = `https://www.skill-capped.com/lol/browse/course/${course}/${video}`;
+                    document.getElementById('videoUrl').value = url;
+                    
+                    // Подсветка
+                    document.querySelectorAll('.video-list .tag').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    setStatus(`📌 Выбрано: ${this.textContent}`);
+                    
+                    // Автоматически запускаем Smart Find
+                    setTimeout(() => smartFind(), 500);
+                });
+            });
+
+            // Enter для Smart Find
             document.getElementById('videoUrl').addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') testVideo();
+                if (e.key === 'Enter') smartFind();
             });
             
-            // Загружаем первое Hwei видео по умолчанию
-            const defaultUrl = 'https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/d4fytw7fl6';
-            document.getElementById('videoUrl').value = defaultUrl;
-            document.getElementById('quickSelect').value = 'hd8jrqps9v,d4fytw7fl6';
+            setStatus('✅ Готово! Выберите видео или вставьте ссылку.');
         });
     </script>
 </body>
