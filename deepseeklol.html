@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>LoL Video Player & Downloader</title>
+    <title>LoL Video Player - Debug</title>
     <style>
         * {
             box-sizing: border-box;
@@ -123,6 +123,27 @@
         .success {
             color: #2e7d32 !important;
         }
+        #debug {
+            margin-top: 15px;
+            padding: 10px;
+            background: #1e1e1e;
+            color: #0f0;
+            font-family: monospace;
+            font-size: 12px;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            display: none;
+        }
+        .debug-toggle {
+            background: #666;
+            font-size: 12px;
+            padding: 5px 10px;
+        }
+        .debug-toggle:hover {
+            background: #888;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
@@ -165,6 +186,7 @@
             <button onclick="prevVideo()">⏮ Previous</button>
             <button onclick="nextVideo()">⏭ Next</button>
             <button class="download-btn" id="downloadBtn" onclick="downloadCurrentVideo()" style="display: none;">⬇ Download Video</button>
+            <button class="debug-toggle" onclick="toggleDebug()">🐛 Debug Log</button>
         </div>
 
         <div class="progress-container" id="progressContainer">
@@ -174,9 +196,38 @@
         <div id="status">Ready</div>
         
         <video id="video" controls></video>
+        
+        <div id="debug"></div>
     </div>
 
     <script>
+        // ===================== ОТЛАДКА =====================
+        let debugLines = [];
+        let debugVisible = false;
+
+        function logDebug(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const line = `[${timestamp}] ${message}`;
+            debugLines.push(line);
+            console.log(line);
+            
+            const debugEl = document.getElementById('debug');
+            if (debugVisible) {
+                debugEl.textContent = debugLines.join('\n');
+                debugEl.scrollTop = debugEl.scrollHeight;
+            }
+        }
+
+        function toggleDebug() {
+            const debugEl = document.getElementById('debug');
+            debugVisible = !debugVisible;
+            debugEl.style.display = debugVisible ? 'block' : 'none';
+            if (debugVisible) {
+                debugEl.textContent = debugLines.join('\n');
+                debugEl.scrollTop = debugEl.scrollHeight;
+            }
+        }
+
         // ===================== ПЛЕЙЛИСТЫ =====================
         const playlists = {
             macro: {
@@ -292,76 +343,109 @@
 
         // ===================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====================
         function getVideoId(url) {
-            const match = url.match(/\/([a-z0-9]{10})$/);
-            return match ? match[1] : null;
+            logDebug(`Extracting ID from: ${url}`);
+            // Пробуем разные паттерны
+            let match = url.match(/\/([a-z0-9]{10})$/);
+            if (match) {
+                logDebug(`Found ID: ${match[1]}`);
+                return match[1];
+            }
+            
+            // Пробуем второй вариант - может быть ID в середине
+            match = url.match(/course\/([a-z0-9]{10})\//);
+            if (match) {
+                logDebug(`Found course ID: ${match[1]}`);
+                return match[1];
+            }
+            
+            logDebug('No ID found in URL');
+            return null;
         }
 
         function setStatus(message, isError = false) {
             const el = document.getElementById('status');
             el.textContent = message;
             el.className = isError ? 'error' : '';
+            logDebug(`Status: ${message}`);
         }
 
         function setCustomStatus(message, isError = false) {
             const el = document.getElementById('customStatus');
             el.textContent = message;
             el.className = isError ? 'error' : 'success';
+            logDebug(`Custom: ${message}`);
         }
 
         // ===================== ПОИСК СЕГМЕНТОВ ВИДЕО =====================
         async function findVideoSegments(videoId) {
-            const statusLabel = document.getElementById("status");
+            logDebug(`Searching segments for ID: ${videoId}`);
             videoSegments = [];
-            let lastSegment = 0;
-
-            statusLabel.textContent = "🔍 Searching for video segments...";
-
-            // Шаг 1: Находим последний существующий сегмент (перебор с шагом 50)
-            for (let i = 1; i <= 1000; i += 50) {
-                const segmentUrl = `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-${String(i).padStart(5, "0")}.ts`;
-                try {
-                    const response = await fetch(segmentUrl, { method: 'HEAD' });
-                    if (response.ok) {
-                        lastSegment = i;
-                    } else {
+            
+            // Пробуем разные форматы URL для сегментов
+            const cdnPatterns = [
+                `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-`,
+                `https://d3b5j9m8n7k6.cloudfront.net/${videoId}/HIDDEN4500-`,
+                `https://cdn.skill-capped.com/videos/${videoId}/`
+            ];
+            
+            let foundAny = false;
+            
+            for (const baseUrl of cdnPatterns) {
+                logDebug(`Trying pattern: ${baseUrl}`);
+                let lastSegment = 0;
+                
+                // Быстрый поиск - проверяем только несколько позиций
+                for (let i = 1; i <= 200; i += 10) {
+                    const segmentUrl = `${baseUrl}${String(i).padStart(5, "0")}.ts`;
+                    try {
+                        const response = await fetch(segmentUrl, { method: 'HEAD' });
+                        if (response.ok) {
+                            lastSegment = i;
+                            logDebug(`Found segment at: ${i}`);
+                            foundAny = true;
+                        } else if (i > 10 && lastSegment === 0) {
+                            // Если первые 10 не найдены, пробуем другой паттерн
+                            break;
+                        }
+                    } catch (e) {
+                        // Пропускаем
+                    }
+                }
+                
+                if (lastSegment > 0) {
+                    // Точный сбор сегментов вокруг найденного
+                    const start = Math.max(1, lastSegment - 20);
+                    const end = lastSegment + 20;
+                    
+                    for (let i = start; i <= end; i++) {
+                        const segmentUrl = `${baseUrl}${String(i).padStart(5, "0")}.ts`;
+                        try {
+                            const response = await fetch(segmentUrl, { method: 'HEAD' });
+                            if (response.ok) {
+                                videoSegments.push({
+                                    url: segmentUrl,
+                                    number: i
+                                });
+                                logDebug(`Added segment ${i}`);
+                            }
+                        } catch (e) {
+                            // Пропускаем
+                        }
+                    }
+                    
+                    if (videoSegments.length > 0) {
+                        logDebug(`Found ${videoSegments.length} segments with pattern: ${baseUrl}`);
                         break;
                     }
-                } catch (e) {
-                    break;
                 }
             }
-
-            if (lastSegment === 0) {
-                statusLabel.textContent = "❌ No segments found for this video";
-                return false;
-            }
-
-            // Шаг 2: Точный перебор вокруг найденного диапазона
-            const start = Math.max(1, lastSegment - 50);
-            const end = lastSegment + 50;
-
-            for (let i = start; i <= end; i++) {
-                const segmentUrl = `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-${String(i).padStart(5, "0")}.ts`;
-                try {
-                    const response = await fetch(segmentUrl, { method: 'HEAD' });
-                    if (response.ok) {
-                        videoSegments.push({
-                            url: segmentUrl,
-                            number: i
-                        });
-                    } else if (i > lastSegment) {
-                        break;
-                    }
-                } catch (e) {
-                    // Пропускаем ошибки
-                }
-            }
-
+            
             if (videoSegments.length > 0) {
-                statusLabel.textContent = `✅ Found ${videoSegments.length} video segments`;
+                setStatus(`✅ Found ${videoSegments.length} video segments`);
                 return true;
             } else {
-                statusLabel.textContent = "❌ No video segments found";
+                setStatus(`❌ No segments found for ${videoId}`, true);
+                logDebug('No segments found with any pattern');
                 return false;
             }
         }
@@ -380,6 +464,7 @@
             });
             
             playlist += "#EXT-X-ENDLIST\n";
+            logDebug(`Created playlist with ${videoSegments.length} segments`);
             return playlist;
         }
 
@@ -392,14 +477,14 @@
                 return false;
             }
 
-            setStatus('⏳ Loading video...');
+            setStatus(`⏳ Loading video ${videoId}...`);
             document.getElementById('downloadBtn').style.display = 'none';
             
             try {
                 // Ищем сегменты
                 const found = await findVideoSegments(videoId);
-                if (!found) {
-                    setStatus('❌ Could not find video segments', true);
+                if (!found || videoSegments.length === 0) {
+                    setStatus(`❌ Could not find segments for ${videoId}`, true);
                     return false;
                 }
 
@@ -427,12 +512,14 @@
                             videoEl.play().catch(e => console.log('Autoplay blocked:', e));
                             setStatus(`▶️ Now playing: ${videoName || 'Video'}`);
                             document.getElementById('downloadBtn').style.display = 'inline-block';
+                            logDebug('Playback started successfully');
                             resolve(true);
                         });
                         
                         hls.on(Hls.Events.ERROR, function(event, data) {
                             console.error('HLS Error:', data);
-                            setStatus('❌ Playback error', true);
+                            setStatus(`❌ HLS error: ${data.type}`, true);
+                            logDebug(`HLS Error: ${JSON.stringify(data)}`);
                             resolve(false);
                         });
                     });
@@ -450,6 +537,7 @@
             } catch (error) {
                 console.error('Play error:', error);
                 setStatus(`❌ Error: ${error.message}`, true);
+                logDebug(`Error: ${error.message}`);
                 return false;
             }
         }
@@ -464,9 +552,10 @@
                 return;
             }
 
+            logDebug(`Loading custom URL: ${url}`);
             const videoId = getVideoId(url);
             if (!videoId) {
-                setCustomStatus('❌ Invalid URL format', true);
+                setCustomStatus('❌ Invalid URL format - could not extract ID', true);
                 return;
             }
 
@@ -478,7 +567,7 @@
                 if (success) {
                     setCustomStatus(`✅ Playing: ${videoId}`);
                 } else {
-                    setCustomStatus('❌ Failed to load video', true);
+                    setCustomStatus(`❌ Failed to load video ${videoId}`, true);
                 }
             });
         }
@@ -511,7 +600,7 @@
             try {
                 // Находим сегменты
                 const found = await findVideoSegments(videoId);
-                if (!found) {
+                if (!found || videoSegments.length === 0) {
                     throw new Error("Could not find video segments");
                 }
 
@@ -537,6 +626,7 @@
                         
                     } catch (error) {
                         console.error(`Failed to download segment ${i+1}:`, error);
+                        logDebug(`Segment ${i+1} download failed: ${error.message}`);
                     }
                 }
                 
@@ -558,6 +648,7 @@
                     document.body.removeChild(a);
                     URL.revokeObjectURL(videoUrl);
                     statusLabel.textContent = "✅ Download completed!";
+                    logDebug('Download completed successfully');
                     setTimeout(() => {
                         progressContainer.style.display = 'none';
                     }, 2000);
@@ -567,6 +658,7 @@
                 console.error('Download failed:', error);
                 statusLabel.textContent = `❌ Download failed: ${error.message}`;
                 progressContainer.style.display = 'none';
+                logDebug(`Download error: ${error.message}`);
             }
         }
 
@@ -580,6 +672,7 @@
                 return;
             }
             
+            logDebug(`Playing from playlist: ${videoUrl}`);
             const videoId = getVideoId(videoUrl);
             if (!videoId) {
                 setStatus('❌ Invalid video URL', true);
@@ -631,6 +724,7 @@
                         
                     } catch (error) {
                         console.error(`Failed to download segment ${i+1}:`, error);
+                        logDebug(`Segment ${i+1} download failed: ${error.message}`);
                     }
                 }
                 
@@ -652,64 +746,8 @@
                     document.body.removeChild(a);
                     URL.revokeObjectURL(videoUrl);
                     statusLabel.textContent = "✅ Download completed!";
+                    logDebug('Current video download completed');
                     setTimeout(() => {
                         progressContainer.style.display = 'none';
                     }, 2000);
-                }, 100);
-                
-            } catch (error) {
-                console.error('Download failed:', error);
-                statusLabel.textContent = `❌ Download failed: ${error.message}`;
-                progressContainer.style.display = 'none';
-            }
-        }
-
-        // ===================== НАВИГАЦИЯ ПО ПЛЕЙЛИСТУ =====================
-        function updateVideos() {
-            const playlistSelect = document.getElementById('playlist');
-            const videoSelect = document.getElementById('url');
-            const playlistId = playlistSelect.value;
-            
-            videoSelect.innerHTML = '<option value="">Choose a lesson</option>';
-            
-            if (playlistId && playlists[playlistId]) {
-                playlists[playlistId].videos.forEach(video => {
-                    const option = document.createElement('option');
-                    option.value = video.url;
-                    option.textContent = video.name;
-                    videoSelect.appendChild(option);
-                });
-            }
-        }
-
-        function prevVideo() {
-            const urlSelect = document.getElementById('url');
-            if (urlSelect.selectedIndex > 1) {
-                urlSelect.selectedIndex--;
-                playSelected();
-            }
-        }
-
-        function nextVideo() {
-            const urlSelect = document.getElementById('url');
-            if (urlSelect.selectedIndex < urlSelect.options.length - 1) {
-                urlSelect.selectedIndex++;
-                playSelected();
-            }
-        }
-
-        // ===================== ИНИЦИАЛИЗАЦИЯ =====================
-        document.addEventListener('DOMContentLoaded', function() {
-            updateVideos();
-            setStatus('✅ Ready — select a video or paste a URL');
-            
-            // Обработчик Enter в поле ввода
-            document.getElementById('customUrl').addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    loadCustomUrl();
-                }
-            });
-        });
-    </script>
-</body>
-</html>
+                },
