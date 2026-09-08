@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Skill-Capped Video Downloader</title>
+    <title>Skill-Capped Video Player</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 900px;
-            margin: 50px auto;
+            max-width: 1000px;
+            margin: 0 auto;
             padding: 20px;
             background: #1a1a2e;
             color: #eee;
@@ -16,22 +16,20 @@
             background: #16213e;
             padding: 30px;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
         h1 {
             color: #e94560;
             text-align: center;
-            margin-bottom: 30px;
         }
         .input-group {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            margin: 20px 0;
             flex-wrap: wrap;
         }
         input {
             flex: 1;
-            padding: 14px;
+            padding: 12px;
             border: 2px solid #0f3460;
             border-radius: 8px;
             background: #0f3460;
@@ -43,10 +41,9 @@
             color: #888;
         }
         button {
-            padding: 14px 30px;
+            padding: 12px 24px;
             border: none;
             border-radius: 8px;
-            font-size: 14px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s;
@@ -57,34 +54,20 @@
         }
         .btn-play:hover {
             background: #c73652;
-            transform: scale(1.02);
         }
-        .btn-download {
+        .btn-open {
             background: #00d2ff;
             color: #1a1a2e;
         }
-        .btn-download:hover {
+        .btn-open:hover {
             background: #00b8e6;
-            transform: scale(1.02);
-        }
-        .btn-test {
-            background: #f5a623;
-            color: #1a1a2e;
-        }
-        .btn-test:hover {
-            background: #d4911e;
-            transform: scale(1.02);
         }
         #status {
-            padding: 15px;
-            margin: 15px 0;
+            padding: 12px;
+            margin: 10px 0;
             border-radius: 8px;
             background: #0f3460;
-            min-height: 50px;
-            font-family: monospace;
-            font-size: 13px;
-            white-space: pre-wrap;
-            word-break: break-all;
+            min-height: 40px;
         }
         #status.error {
             background: #4a0e1a;
@@ -94,368 +77,174 @@
             background: #0e4a1a;
             color: #69db7c;
         }
-        video {
-            width: 100%;
-            max-width: 800px;
-            height: 450px;
-            background: #000;
+        .video-container {
             margin-top: 20px;
-            display: block;
             border-radius: 8px;
-        }
-        .progress-bar {
-            width: 100%;
-            background: #0f3460;
-            border-radius: 8px;
-            margin: 10px 0;
-            display: none;
             overflow: hidden;
+            background: #000;
+            min-height: 400px;
+            display: none;
         }
-        .progress-bar-fill {
-            height: 30px;
-            background: linear-gradient(90deg, #e94560, #00d2ff);
-            width: 0%;
+        .video-container iframe {
+            width: 100%;
+            height: 500px;
+            border: none;
+        }
+        .video-container .fallback {
+            padding: 40px;
             text-align: center;
-            line-height: 30px;
-            color: white;
-            font-weight: bold;
-            transition: width 0.3s;
+            color: #888;
+        }
+        .video-container .fallback a {
+            color: #00d2ff;
         }
         .hint {
-            color: #888;
+            color: #666;
             font-size: 12px;
             margin-top: 10px;
-            text-align: center;
         }
         .hint a {
             color: #00d2ff;
+            cursor: pointer;
         }
-        .video-list {
+        .playlist-section {
             margin: 15px 0;
-            padding: 10px;
+            padding: 15px;
             background: #0f3460;
             border-radius: 8px;
-            max-height: 200px;
-            overflow-y: auto;
         }
-        .video-list-item {
-            padding: 8px 12px;
-            margin: 4px 0;
+        .playlist-section select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
             background: #1a1a2e;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            color: #fff;
+            border: 1px solid #0f3460;
+            font-size: 14px;
         }
-        .video-list-item:hover {
-            background: #2a2a4e;
-        }
-        .video-list-item .vid-id {
-            color: #00d2ff;
-            font-family: monospace;
-            font-size: 12px;
-        }
-        .video-list-item .vid-name {
-            flex: 1;
-            margin-right: 10px;
+        .playlist-section select option {
+            background: #1a1a2e;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎬 Skill-Capped Video Downloader</h1>
+        <h1>🎬 Skill-Capped Video Player</h1>
         
+        <div class="playlist-section">
+            <label style="display:block;margin-bottom:8px;color:#888;">📂 Select from playlists:</label>
+            <select id="playlistSelect" onchange="loadPlaylistVideo()">
+                <option value="">— Choose a video —</option>
+                <optgroup label="Hwei (Master in Minutes)">
+                    <option value="https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/d4fytw7fl6">EP 01: Understanding Hwei's Kit</option>
+                    <option value="https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/8m60l9lnm0">EP 02</option>
+                    <option value="https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/z5t58m9lc8">EP 03</option>
+                    <option value="https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/p6l9scwmwv">EP 04</option>
+                    <option value="https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/877mhsvjf6">EP 05</option>
+                    <option value="https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/9rlgl2ykk4">EP 06</option>
+                    <option value="https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/y7c8khgb3l">EP 07</option>
+                    <option value="https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/1l556c1syb">EP 08</option>
+                    <option value="https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/yxb6pn7mh5">EP 09</option>
+                    <option value="https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/g5c041w9qs">EP 10</option>
+                    <option value="https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/284m0k07d1">EP 11</option>
+                    <option value="https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/dj5tbtprxt">EP 12</option>
+                    <option value="https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/0zlh90b6cw">EP 13</option>
+                    <option value="https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/f8n7rgd0rd">EP 14</option>
+                </optgroup>
+            </select>
+        </div>
+
         <div class="input-group">
-            <input type="text" id="videoUrl" placeholder="https://www.skill-capped.com/lol/browse/course/xxxxx/yyyyy" value="https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/d4fytw7fl6">
-            <button class="btn-play" onclick="playVideo()">▶ Play</button>
-            <button class="btn-download" onclick="downloadVideo()">⬇ Download</button>
-            <button class="btn-test" onclick="testVideo()">🔍 Test</button>
+            <input type="text" id="videoUrl" placeholder="Paste any Skill-Capped URL here">
+            <button class="btn-play" onclick="playInIframe()">▶ Play in iframe</button>
+            <button class="btn-open" onclick="openInNewTab()">🔗 Open in new tab</button>
         </div>
 
-        <div id="status">Ready — paste a video URL and click Play or Test</div>
+        <div id="status">Ready — select a video or paste a URL</div>
 
-        <div class="progress-bar" id="progressBar">
-            <div class="progress-bar-fill" id="progressFill">0%</div>
+        <div class="video-container" id="videoContainer">
+            <iframe id="videoIframe" src="about:blank"></iframe>
         </div>
-
-        <video id="videoPlayer" controls></video>
 
         <div class="hint">
-            💡 Try this URL: <a href="#" onclick="document.getElementById('videoUrl').value='https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/d4fytw7fl6'; return false;">Hwei EP 01</a> | 
-            <a href="#" onclick="document.getElementById('videoUrl').value='https://www.skill-capped.com/lol/browse/course/ypkt1bksy9'; return false;">Macro 1</a>
+            💡 <strong>Note:</strong> Skill-Capped videos require a subscription. The iframe will show the page, but video playback may be blocked unless you're logged in.<br>
+            🔗 Use <strong>"Open in new tab"</strong> to watch directly on the Skill-Capped website.
         </div>
     </div>
 
     <script>
-        // ===================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =====================
-        let videoSegments = [];
-        let currentVideoId = '';
-
-        // ===================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====================
-        function getVideoId(url) {
-            // Пробуем извлечь ID разными способами
-            let match = url.match(/\/([a-z0-9]{10})$/);
-            if (match) return match[1];
-            
-            match = url.match(/course\/([a-z0-9]{10})/);
-            if (match) return match[1];
-            
-            // Если URL короткий (только ID)
-            if (/^[a-z0-9]{10}$/.test(url)) return url;
-            
-            return null;
-        }
-
         function setStatus(text, type = '') {
             const el = document.getElementById('status');
             el.textContent = text;
             el.className = type;
-            console.log(`[${type || 'info'}] ${text}`);
         }
 
-        function showProgress(percent, text) {
-            const bar = document.getElementById('progressBar');
-            const fill = document.getElementById('progressFill');
-            bar.style.display = 'block';
-            fill.style.width = percent + '%';
-            fill.textContent = text || percent + '%';
+        function showVideo() {
+            document.getElementById('videoContainer').style.display = 'block';
         }
 
-        function hideProgress() {
-            document.getElementById('progressBar').style.display = 'none';
+        function hideVideo() {
+            document.getElementById('videoContainer').style.display = 'none';
         }
 
-        // ===================== ПОИСК СЕГМЕНТОВ =====================
-        async function findSegments(videoId) {
-            setStatus(`🔍 Searching for segments of ${videoId}...`);
-            videoSegments = [];
-            
-            // Пробуем найти сегменты
-            let found = false;
-            const baseUrl = `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-`;
-            
-            // Сначала ищем последний сегмент (быстрый поиск)
-            let lastSegment = 0;
-            for (let i = 1; i <= 300; i += 30) {
-                const url = `${baseUrl}${String(i).padStart(5, '0')}.ts`;
-                try {
-                    const resp = await fetch(url, { method: 'HEAD' });
-                    if (resp.ok) {
-                        lastSegment = i;
-                        found = true;
-                        setStatus(`✅ Found segment at ${i}, refining search...`);
-                    }
-                } catch (e) {
-                    // Если не найдено на этом шаге, продолжаем
-                }
+        function loadPlaylistVideo() {
+            const select = document.getElementById('playlistSelect');
+            const url = select.value;
+            if (!url) {
+                hideVideo();
+                setStatus('Select a video from the list');
+                return;
             }
-
-            if (!found) {
-                setStatus('❌ No segments found! The video might be protected or URL is wrong.', 'error');
-                return false;
-            }
-
-            // Точный сбор сегментов вокруг найденного
-            const start = Math.max(1, lastSegment - 20);
-            const end = lastSegment + 20;
-            
-            let count = 0;
-            for (let i = start; i <= end; i++) {
-                const url = `${baseUrl}${String(i).padStart(5, '0')}.ts`;
-                try {
-                    const resp = await fetch(url, { method: 'HEAD' });
-                    if (resp.ok) {
-                        videoSegments.push({ url, number: i });
-                        count++;
-                        if (count % 5 === 0) {
-                            setStatus(`📦 Found ${count} segments...`);
-                        }
-                    }
-                } catch (e) {
-                    // Пропускаем
-                }
-            }
-
-            if (videoSegments.length === 0) {
-                setStatus('❌ No valid segments found', 'error');
-                return false;
-            }
-
-            setStatus(`✅ Found ${videoSegments.length} segments!`, 'success');
-            return true;
+            document.getElementById('videoUrl').value = url;
+            playInIframe();
         }
 
-        // ===================== ТЕСТОВАЯ ФУНКЦИЯ =====================
-        async function testVideo() {
+        function playInIframe() {
             const url = document.getElementById('videoUrl').value.trim();
             if (!url) {
-                setStatus('⚠️ Please enter a URL', 'error');
+                setStatus('⚠️ Please paste a URL or select a video', 'error');
                 return;
             }
 
-            const videoId = getVideoId(url);
-            if (!videoId) {
-                setStatus(`❌ Could not extract video ID from: ${url}`, 'error');
+            // Проверяем, что это ссылка на Skill-Capped
+            if (!url.includes('skill-capped.com')) {
+                setStatus('⚠️ Please enter a Skill-Capped URL', 'error');
                 return;
             }
 
-            setStatus(`🧪 Testing ID: ${videoId}`);
+            setStatus(`⏳ Loading: ${url}...`);
+            showVideo();
             
-            // Проверяем доступность сегментов
-            const testUrl = `https://d13z5uuzt1wkbz.cloudfront.net/${videoId}/HIDDEN4500-00001.ts`;
-            try {
-                const resp = await fetch(testUrl, { method: 'HEAD' });
-                if (resp.ok) {
-                    setStatus(`✅ Segment 1 exists! Trying to find more...`, 'success');
-                    await findSegments(videoId);
-                } else {
-                    setStatus(`❌ Segment 1 not found (${resp.status}). Video may be protected.`, 'error');
-                }
-            } catch (e) {
-                setStatus(`❌ Cannot access CDN: ${e.message}`, 'error');
-            }
+            const iframe = document.getElementById('videoIframe');
+            iframe.src = url;
+            
+            // Таймаут для обработки ошибок
+            setTimeout(() => {
+                setStatus(`📺 Video page loaded. If video doesn't play, you may need to log in.`, 'success');
+            }, 3000);
         }
 
-        // ===================== ВОСПРОИЗВЕДЕНИЕ =====================
-        async function playVideo() {
+        function openInNewTab() {
             const url = document.getElementById('videoUrl').value.trim();
             if (!url) {
-                setStatus('⚠️ Please enter a URL', 'error');
+                setStatus('⚠️ Please paste a URL first', 'error');
                 return;
             }
-
-            const videoId = getVideoId(url);
-            if (!videoId) {
-                setStatus(`❌ Could not extract video ID`, 'error');
-                return;
-            }
-
-            currentVideoId = videoId;
-            
-            // Ищем сегменты
-            const found = await findSegments(videoId);
-            if (!found) return;
-
-            // Создаем плейлист
-            let playlist = "#EXTM3U\n";
-            playlist += "#EXT-X-VERSION:3\n";
-            playlist += "#EXT-X-TARGETDURATION:10\n";
-            playlist += "#EXT-X-MEDIA-SEQUENCE:0\n";
-            playlist += "#EXT-X-PLAYLIST-TYPE:VOD\n";
-            
-            videoSegments.forEach(seg => {
-                playlist += `#EXTINF:10.0,\n`;
-                playlist += `${seg.url}\n`;
-            });
-            playlist += "#EXT-X-ENDLIST\n";
-
-            // Создаем blob URL
-            const blob = new Blob([playlist], { type: 'application/x-mpegURL' });
-            const blobUrl = URL.createObjectURL(blob);
-
-            const video = document.getElementById('videoPlayer');
-            
-            // Пробуем использовать HLS.js
-            if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-                if (window._hls) {
-                    window._hls.destroy();
-                }
-                const hls = new Hls();
-                window._hls = hls;
-                hls.loadSource(blobUrl);
-                hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    video.play().catch(() => {});
-                    setStatus(`▶️ Playing: ${videoId}`, 'success');
-                });
-                hls.on(Hls.Events.ERROR, (e, data) => {
-                    setStatus(`⚠️ HLS error: ${data.type}`, 'error');
-                });
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Safari
-                video.src = blobUrl;
-                video.play().catch(() => {});
-                setStatus(`▶️ Playing: ${videoId}`, 'success');
-            } else {
-                setStatus('❌ Your browser does not support HLS', 'error');
-            }
+            window.open(url, '_blank');
+            setStatus(`🔗 Opened in new tab: ${url}`, 'success');
         }
 
-        // ===================== СКАЧИВАНИЕ =====================
-        async function downloadVideo() {
-            const url = document.getElementById('videoUrl').value.trim();
-            if (!url) {
-                setStatus('⚠️ Please enter a URL', 'error');
-                return;
-            }
-
-            const videoId = getVideoId(url);
-            if (!videoId) {
-                setStatus(`❌ Could not extract video ID`, 'error');
-                return;
-            }
-
-            // Ищем сегменты
-            const found = await findSegments(videoId);
-            if (!found) return;
-
-            const chunks = [];
-            let downloaded = 0;
-            const total = videoSegments.length;
-
-            showProgress(0, 'Starting...');
-            setStatus(`📥 Downloading ${total} segments...`);
-
-            for (let i = 0; i < total; i++) {
-                const seg = videoSegments[i];
-                try {
-                    const resp = await fetch(seg.url);
-                    if (resp.ok) {
-                        const buffer = await resp.arrayBuffer();
-                        chunks.push(buffer);
-                    }
-                } catch (e) {
-                    // Пропускаем проблемные сегменты
-                }
-                
-                downloaded++;
-                const percent = Math.round((downloaded / total) * 100);
-                showProgress(percent, `${downloaded}/${total}`);
-            }
-
-            if (chunks.length === 0) {
-                setStatus('❌ No segments downloaded', 'error');
-                hideProgress();
-                return;
-            }
-
-            setStatus(`📦 Combining ${chunks.length} segments...`);
-            
-            const blob = new Blob(chunks, { type: 'video/MP2T' });
-            const blobUrl = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = `video_${videoId}.ts`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
-
-            setStatus(`✅ Downloaded ${chunks.length} segments!`, 'success');
-            hideProgress();
-        }
-
-        // ===================== ИНИЦИАЛИЗАЦИЯ =====================
+        // Enter key support
         document.addEventListener('DOMContentLoaded', function() {
-            setStatus('✅ Ready — paste a URL and click Play or Test');
-            
-            // Enter для быстрого запуска
             document.getElementById('videoUrl').addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') playVideo();
+                if (e.key === 'Enter') playInIframe();
             });
+            
+            // Загружаем первый Hwei видео по умолчанию
+            const defaultUrl = 'https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/d4fytw7fl6';
+            document.getElementById('videoUrl').value = defaultUrl;
+            document.getElementById('playlistSelect').value = defaultUrl;
+            setStatus('✅ Ready! Click "Play in iframe" to watch Hwei EP 01');
         });
     </script>
 </body>
