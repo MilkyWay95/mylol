@@ -75,12 +75,29 @@
             line-height: 20px;
             color: white;
         }
+        .custom-url-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f0f7ff;
+            border-radius: 4px;
+            border: 1px solid #b8d4f0;
+        }
+        .custom-url-section input {
+            width: 70%;
+            max-width: 600px;
+        }
+        .custom-url-section button {
+            background: #ff9800;
+        }
+        .custom-url-section button:hover {
+            background: #e68900;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
     <div class="player-container">
-        <h1>LoL Macro Fundamentals</h1>
+        <h1>LoL Macro Player</h1>
         
         <div>
             <label for="playlist">Select Playlist:</label>
@@ -91,6 +108,7 @@
                 <option value="lux">Master Lux in Minutes</option>
                 <option value="irontosilver">Iron to Silver</option>
                 <option value="trading">Master Trading in Minutes</option>
+                <option value="Hwei">Hwei maine</option>
             </select>
         </div>
 
@@ -99,6 +117,17 @@
             <select id="url" style="width: 100%;">
                 <option value="">Choose a lesson</option>
             </select>
+        </div>
+
+        <!-- НОВАЯ СЕКЦИЯ: ручной ввод ссылки -->
+        <div class="custom-url-section">
+            <label for="customUrl"><strong>Or paste any Skill-Capped video URL:</strong></label>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                <input type="text" id="customUrl" placeholder="https://www.skill-capped.com/lol/browse/course/xxxxx/yyyyy" style="flex: 1; min-width: 250px;">
+                <button onclick="loadCustomUrl()">▶ Load & Play</button>
+                <button onclick="downloadCustomUrl()" style="background: #f44336;">⬇ Download</button>
+            </div>
+            <div id="customStatus" style="margin-top: 8px; color: #666; font-style: italic;"></div>
         </div>
 
         <div class="controls">
@@ -122,6 +151,7 @@
         var currentVideoIndex = 0;
         var videoSegments = [];
         var videoId = '';
+        var currentVideoName = '';
         
         const playlists = {
             macro: {
@@ -207,8 +237,185 @@
                     { name: "12. Recovery from Bad Trades", url: "https://www.skill-capped.com/lol/browse/course/52mp48wf42" },
                     { name: "13. Closing Advantages from Trades", url: "https://www.skill-capped.com/lol/browse/course/k5k4k3zmxc" }
                 ]
+            },
+            Hwei: {
+                name: "Hwei maine",
+                videos: [
+                    { name: "EP 01: Understanding Hwei's Kit", url: "https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/d4fytw7fl6" },
+                    { name: "EP 02", url: "https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/8m60l9lnm0" },
+                    { name: "EP 03", url: "https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/z5t58m9lc8" },
+                    { name: "EP 04", url: "https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/p6l9scwmwv" },
+                    { name: "EP 05", url: "https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/877mhsvjf6" },
+                    { name: "EP 06", url: "https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/9rlgl2ykk4" },
+                    { name: "EP 07", url: "https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/y7c8khgb3l" },
+                    { name: "EP 08", url: "https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/1l556c1syb" },
+                    { name: "EP 09", url: "https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/yxb6pn7mh5" },
+                    { name: "EP 10", url: "https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/g5c041w9qs" },
+                    { name: "EP 11", url: "https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/284m0k07d1" },
+                    { name: "EP 12", url: "https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/dj5tbtprxt" },
+                    { name: "EP 13", url: "https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/0zlh90b6cw" },
+                    { name: "EP 14", url: "https://www.skill-capped.com/lol/browse/course/hd8jrqps9v/f8n7rgd0rd" }
+                ]
             }
         };
+
+        // ========== НОВЫЕ ФУНКЦИИ ДЛЯ РАБОТЫ С ПРОИЗВОЛЬНОЙ ССЫЛКОЙ ==========
+        
+        function getVideoIdFromUrl(url) {
+            // Пытаемся извлечь ID из URL (последние 10 символов после последнего слеша)
+            const match = url.match(/\/([a-z0-9]{10})$/);
+            return match ? match[1] : null;
+        }
+
+        function getVideoNameFromUrl(url) {
+            // Пытаемся извлечь название из URL или используем ID
+            const id = getVideoIdFromUrl(url);
+            return id ? `Video_${id}` : 'custom_video';
+        }
+
+        async function loadAndPlayVideo(url, videoName) {
+            const videoId = getVideoIdFromUrl(url);
+            if (!videoId) {
+                alert('Invalid video URL. Please check the link.');
+                return false;
+            }
+
+            document.getElementById('status').textContent = 'Loading video...';
+            document.getElementById('downloadBtn').style.display = 'none';
+            document.getElementById('customStatus').textContent = 'Loading...';
+            
+            try {
+                // Сохраняем ID и имя для скачивания
+                window._customVideoId = videoId;
+                window._customVideoName = videoName || getVideoNameFromUrl(url);
+                
+                if (!await findVideoSegments(videoId)) {
+                    throw new Error("Could not find video segments");
+                }
+
+                const playlist = createHLSPlaylist();
+                
+                if (Hls.isSupported()) {
+                    if (hls) hls.destroy();
+                    hls = new Hls();
+                    hls.loadSource(URL.createObjectURL(new Blob([playlist], { type: 'application/x-mpegURL' })));
+                    hls.attachMedia(document.getElementById('video'));
+                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        document.getElementById('video').play();
+                        document.getElementById('status').textContent = 'Now playing: ' + (videoName || 'Custom video');
+                        document.getElementById('downloadBtn').style.display = 'inline-block';
+                        document.getElementById('customStatus').textContent = '✅ Playing: ' + (videoName || 'Custom video');
+                    });
+                } else if (document.getElementById('video').canPlayType('application/vnd.apple.mpegurl')) {
+                    document.getElementById('video').src = URL.createObjectURL(new Blob([playlist], { type: 'application/x-mpegURL' }));
+                    document.getElementById('status').textContent = 'Now playing: ' + (videoName || 'Custom video');
+                    document.getElementById('downloadBtn').style.display = 'inline-block';
+                    document.getElementById('customStatus').textContent = '✅ Playing: ' + (videoName || 'Custom video');
+                }
+                return true;
+            } catch (error) {
+                document.getElementById('status').textContent = 'Error: ' + error.message;
+                document.getElementById('customStatus').textContent = '❌ Error: ' + error.message;
+                console.error(error);
+                return false;
+            }
+        }
+
+        function loadCustomUrl() {
+            const input = document.getElementById('customUrl');
+            const url = input.value.trim();
+            if (!url) {
+                alert('Please paste a video URL');
+                return;
+            }
+            loadAndPlayVideo(url);
+        }
+
+        async function downloadCustomUrl() {
+            const input = document.getElementById('customUrl');
+            const url = input.value.trim();
+            if (!url) {
+                alert('Please paste a video URL first');
+                return;
+            }
+
+            const videoId = getVideoIdFromUrl(url);
+            if (!videoId) {
+                alert('Invalid video URL');
+                return;
+            }
+
+            const statusLabel = document.getElementById('customStatus');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('downloadProgress');
+            
+            statusLabel.textContent = 'Preparing download...';
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+            
+            try {
+                // Находим сегменты
+                if (!await findVideoSegments(videoId)) {
+                    throw new Error("Could not find video segments");
+                }
+
+                const chunks = [];
+                let downloaded = 0;
+                const totalSegments = videoSegments.length;
+                
+                for (let i = 0; i < totalSegments; i++) {
+                    const segment = videoSegments[i];
+                    statusLabel.textContent = `Downloading segment ${i+1}/${totalSegments}...`;
+                    
+                    try {
+                        const response = await fetch(segment.url);
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        
+                        const buffer = await response.arrayBuffer();
+                        chunks.push(buffer);
+                        downloaded++;
+                        
+                        const progress = Math.round((downloaded / totalSegments) * 100);
+                        progressBar.style.width = `${progress}%`;
+                        progressBar.textContent = `${progress}%`;
+                        
+                    } catch (error) {
+                        console.error(`Failed to download segment ${i+1}:`, error);
+                    }
+                }
+                
+                if (chunks.length === 0) {
+                    throw new Error("No segments were downloaded successfully");
+                }
+                
+                statusLabel.textContent = "Combining segments...";
+                const fullBlob = new Blob(chunks, { type: 'video/MP2T' });
+                const videoUrl = URL.createObjectURL(fullBlob);
+                
+                const a = document.createElement('a');
+                a.href = videoUrl;
+                a.download = `video_${videoId}.ts`;
+                document.body.appendChild(a);
+                a.click();
+                
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(videoUrl);
+                    statusLabel.textContent = "✅ Download completed!";
+                    setTimeout(() => {
+                        progressContainer.style.display = 'none';
+                    }, 2000);
+                }, 100);
+                
+            } catch (error) {
+                console.error('Download failed:', error);
+                statusLabel.textContent = "❌ Download failed: " + error.message;
+                progressContainer.style.display = 'none';
+            }
+        }
+
+        // ========== ОСТАЛЬНЫЕ ФУНКЦИИ (БЕЗ ИЗМЕНЕНИЙ) ==========
 
         function updateVideos() {
             const playlistSelect = document.getElementById('playlist');
@@ -235,7 +442,6 @@
         async function findVideoSegments(videoId) {
             const statusLabel = document.getElementById("status");
             videoSegments = [];
-            let segmentNumber = 1;
             let lastSegment = 0;
 
             statusLabel.textContent = "Searching for video segments...";
@@ -313,6 +519,7 @@
             
             document.getElementById('status').textContent = 'Loading video...';
             document.getElementById('downloadBtn').style.display = 'none';
+            document.getElementById('customStatus').textContent = '';
             
             try {
                 if (!await findVideoSegments(videoId)) {
